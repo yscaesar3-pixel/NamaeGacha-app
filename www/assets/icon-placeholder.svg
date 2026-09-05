@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#FFFFFF"/>
+  <text x="512" y="620" font-family="'Hiragino Sans','Yu Gothic',sans-serif"
+        font-size="560" font-weight="700" fill="#1C1C1E"
+        text-anchor="middle">名</text>
+  <circle cx="800" cy="800" r="90" fill="#E45745"/>
+</svg>

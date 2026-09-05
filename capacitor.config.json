@@ -1,0 +1,9 @@
+{
+  "appId": "com.example.namaegacha",
+  "appName": "なまえガチャ",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "always"
+  }
+}

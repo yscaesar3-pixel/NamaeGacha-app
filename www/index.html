@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>なまえガチャ</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ========== ホーム画面 ========== -->
+  <section id="screen-home" class="screen active">
+    <div class="top-bar">
+      <h1 class="app-title">なまえガチャ</h1>
+      <button id="btn-info" class="icon-button" aria-label="アプリ情報">ⓘ</button>
+    </div>
+
+    <div class="content">
+      <div>
+        <p class="condition-label">生成条件</p>
+        <div id="condition-segment" class="segmented-control" role="tablist" aria-label="生成条件">
+          <button class="segment-item" data-condition="all">すべて</button>
+          <button class="segment-item" data-condition="male">男性</button>
+          <button class="segment-item" data-condition="female">女性</button>
+          <button class="segment-item" data-condition="neutral">中性的</button>
+        </div>
+      </div>
+
+      <div class="home-actions">
+        <button id="btn-generate" class="primary-button" disabled>名前を生成</button>
+        <button id="btn-open-list" class="secondary-button">履歴・お気に入り</button>
+        <p id="home-loading" class="loading-note">名前データを読み込み中です…</p>
+        <p id="home-error" class="error-note"></p>
+        <button id="btn-reload" class="text-button" style="display:none;">再読み込み</button>
+      </div>
+    </div>
+
+    <div class="ad-slot" id="ad-slot-home"></div>
+  </section>
+
+  <!-- ========== 結果画面 ========== -->
+  <section id="screen-result" class="screen">
+    <div class="top-bar">
+      <button id="btn-result-home" class="icon-button" aria-label="ホームへ戻る">‹</button>
+      <span style="width:36px;"></span>
+    </div>
+
+    <div class="content">
+      <p id="result-name" class="result-name">－　－</p>
+      <p id="result-reading" class="result-reading">－　－</p>
+      <button id="btn-result-star" class="result-star-button" aria-label="お気に入り登録">☆</button>
+      <button id="btn-result-copy" class="result-copy-button">姓名をコピー</button>
+      <p id="result-error" class="error-note"></p>
+    </div>
+
+    <div class="result-actions">
+      <button id="btn-regenerate" class="primary-button">もう一度生成</button>
+      <button id="btn-result-list" class="secondary-button">履歴</button>
+      <button id="btn-result-home-2" class="text-button">ホームへ戻る</button>
+    </div>
+
+    <div class="ad-slot" id="ad-slot-result"></div>
+  </section>
+
+  <!-- ========== 履歴・お気に入り画面 ========== -->
+  <section id="screen-list" class="screen">
+    <div class="top-bar">
+      <button id="btn-list-home" class="icon-button" aria-label="ホームへ戻る">‹</button>
+      <span style="width:36px;"></span>
+    </div>
+
+    <div class="tab-bar" role="tablist">
+      <button id="tab-history" class="tab-item selected" data-tab="history">履歴</button>
+      <button id="tab-favorites" class="tab-item" data-tab="favorites">お気に入り</button>
+    </div>
+
+    <div class="list-scroll">
+      <p id="list-empty-history" class="list-empty">生成した名前はまだありません</p>
+      <p id="list-empty-favorites" class="list-empty">お気に入りの名前はまだありません</p>
+      <div id="list-items"></div>
+    </div>
+
+    <div class="list-footer" id="list-footer-history">
+      <button id="btn-clear-history" class="text-button">履歴をすべて削除</button>
+    </div>
+
+    <div class="ad-slot" id="ad-slot-list"></div>
+  </section>
+
+</div>
+
+<!-- ========== トースト ========== -->
+<div id="toast" class="toast"></div>
+
+<!-- ========== 情報ポップアップ ========== -->
+<div id="modal-info" class="modal-overlay">
+  <div class="modal-sheet">
+    <h2 class="modal-title">なまえガチャについて</h2>
+    <div class="modal-body">
+      <p>日本で実際に使われている姓と名をランダムに組み合わせて表示します。表示された姓名の組み合わせが、実在する人物を示すものではありません。</p>
+      <p class="modal-sub">アプリバージョン：<span id="info-version">1.0.0</span></p>
+      <p class="modal-sub">姓名データの出典：JMnedict（詳細は下記リンクを参照）</p>
+      <p><a class="modal-link" id="link-data-license" href="#">データライセンス（EDRDGライセンス）を見る</a></p>
+      <p><a class="modal-link" id="link-privacy" href="#">プライバシーポリシーを見る</a></p>
+      <button id="btn-privacy-options" class="modal-privacy-button" style="display:none;">プライバシー設定</button>
+      <p class="modal-sub">このアプリにはGoogle AdMobによるバナー広告が表示されます。</p>
+    </div>
+    <button id="btn-modal-close" class="secondary-button modal-close">閉じる</button>
+  </div>
+</div>
+
+<!-- ========== 履歴全削除の確認ダイアログ ========== -->
+<div id="confirm-clear-history" class="confirm-overlay">
+  <div class="confirm-box">
+    <p>履歴をすべて削除しますか？<br>この操作は取り消せません。</p>
+    <div class="confirm-actions">
+      <button id="btn-confirm-cancel" class="confirm-cancel">キャンセル</button>
+      <button id="btn-confirm-delete" class="confirm-delete">削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- file://でのPC確認用データ。Capacitor/HTTPではJSON取得を優先する。 -->
+<script src="data/name_data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/generator.js"></script>
+<script src="js/ads.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
