@@ -8,7 +8,7 @@
   "use strict";
 
   const APP_VERSION = "1.0.0";
-  const PRIVACY_POLICY_URL = "https://example.com/namaegacha/privacy"; // 後で正式URLに差し替える
+  const PRIVACY_POLICY_URL = "https://yscaesar3-pixel.github.io/NamaeGacha-app/privacy.html";
   const DATA_LICENSE_URL = "https://www.edrdg.org/edrdg/licence.html";
 
   // ===== アプリの状態 =====
@@ -98,21 +98,6 @@
     el.btnGenerate.disabled = true;
 
     try {
-      // Windows等でindex.htmlを直接開いた場合は、fetch(file://)が制限されるため
-      // 同梱JSデータを使用する。iPhone/HTTP環境では従来どおりJSONを取得する。
-      if (location.protocol === "file:" && window.NAMAE_GACHA_DATA) {
-        const { surnames, givenNames } = window.NAMAE_GACHA_DATA;
-        if (!Array.isArray(surnames) || !Array.isArray(givenNames)) {
-          throw new Error("同梱データ形式エラー");
-        }
-        state.surnames = surnames;
-        state.givenNames = givenNames;
-        state.dataLoaded = true;
-        el.homeLoading.style.display = "none";
-        el.btnGenerate.disabled = false;
-        return;
-      }
-
       const [surnamesRes, givenNamesRes] = await Promise.all([
         fetch("data/surnames.json"),
         fetch("data/given_names.json")
