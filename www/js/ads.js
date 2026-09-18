@@ -161,15 +161,27 @@
         return;
       }
 
+      // SDK初期化とUMP処理を分離する。UMPだけが失敗した場合に、
+      // Google公式テスト広告の表示経路まで失われないようにするため。
       try {
-        // capacitor-community/admob v8の推奨順序に合わせ、最初にSDKを初期化する。
         await AdMob.initialize({
           initializeForTesting: USE_TEST_ADS
         });
         this._setDiagnostic("SDK初期化済み / UMP確認中", false);
         await this._registerDiagnosticListeners(AdMob);
+      } catch (e) {
+        console.warn("[ads] AdMob initialization failed", e);
+        this._updatePrivacyOptionsRequired(false);
+        this._setDiagnostic(
+          "SDK初期化失敗 / " + (e && e.message ? e.message : String(e)),
+          true
+        );
+        return;
+      }
 
-        const consentInfo = await resolveConsent(AdMob);
+      let consentInfo;
+      try {
+        consentInfo = await resolveConsent(AdMob);
 
         console.info("[ads] consent resolved", {
           status: consentInfo && consentInfo.status,
@@ -199,16 +211,19 @@
           this._setDiagnostic("UMP未許可 / テスト広告で経路確認を続行", false);
         }
 
-        await this.showBanner();
       } catch (e) {
-        // 同意処理・広告初期化に失敗してもアプリ本体は通常動作させる。
-        console.warn("[ads] AdMob consent/initialization failed", e);
+        console.warn("[ads] UMP consent flow failed", e);
         this._updatePrivacyOptionsRequired(false);
-        this._setDiagnostic(
-          "初期化またはUMP失敗 / " + (e && e.message ? e.message : String(e)),
-          true
-        );
+        if (!USE_TEST_ADS) {
+          // 本番広告は同意状態を確認できない限りリクエストしない。
+          return;
+        }
+        // 診断ビルドだけはGoogle公式テスト広告へ進み、
+        // UMPとバナー実装の問題を切り分ける。本番広告IDでは絶対に実行しない。
+        this._setDiagnostic("UMP失敗 / テスト広告で経路確認を続行", false);
       }
+
+      await this.showBanner();
     },
 
     async showBanner() {

@@ -163,7 +163,10 @@ No Fill・配信制限を確認してください。
 
 `www/js/ads.js` はアプリ起動時に、まずGoogle User Messaging Platform（UMP）で同意情報を取得し
 （`requestConsentInfo`）、同意フォームが必要な場合のみ表示します（`showConsentForm`）。
-広告リクエスト可否（`canRequestAds`）が確認できた場合のみAdMobを初期化し、バナーを表示します。
+AdMob SDKを初期化した後、広告リクエスト可否（`canRequestAds`）を確認してバナーを表示します。
+ただし診断用のGoogle公式テスト広告に限り、UMP取得が失敗しても表示処理まで進めます。
+これはUMPとバナー実装のどちらに原因があるかを切り分けるためで、本番広告ではUMP取得に
+失敗した場合は広告リクエストを行いません。
 
 - アプリ起動直後に独自判断でATT（App Tracking Transparency）ダイアログを表示することはありません。
   `requestTrackingAuthorization()` は呼び出していません。
