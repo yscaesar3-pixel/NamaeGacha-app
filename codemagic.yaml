@@ -12,8 +12,8 @@ workflows:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
         APP_VERSION: "1.0.1"
-        # 広告表示経路を確認するまでは false。最終提出ビルドだけ true にする。
-        ADMOB_USE_PRODUCTION: "false"
+        # リリース用設定。本番広告IDを使用する。
+        ADMOB_USE_PRODUCTION: "true"
       node: latest
       xcode: latest
       cocoapods: default
@@ -25,9 +25,10 @@ workflows:
       - name: Select AdMob test or production mode
         script: |
           if [ "${ADMOB_USE_PRODUCTION:-false}" = "true" ]; then
-            sed -i '' 's/const USE_TEST_ADS = true;/const USE_TEST_ADS = false;/' www/js/ads.js
+            sed -i '' -E 's/const USE_TEST_ADS = (true|false);/const USE_TEST_ADS = false;/' www/js/ads.js
             echo "AdMob mode: production"
           else
+            sed -i '' -E 's/const USE_TEST_ADS = (true|false);/const USE_TEST_ADS = true;/' www/js/ads.js
             echo "AdMob mode: Google official test banner"
           fi
 

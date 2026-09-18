@@ -11,7 +11,8 @@ HTML / CSS / JavaScript で実装し、Capacitorを使ってiOSアプリ化す�
 - `www/` 以下に機能別のファイル構成で分離しています。
 - 正式データ22,000件（姓10,000件・名12,000件）を組み込み済みです。
 - PCでの直接確認用に `name_data.js` も同梱しています。iPhone版はJSONを使用します。
-- 広告はGoogle公式の**テスト広告ID**を使う設定になっています（`www/js/ads.js` 内 `USE_TEST_ADS = true`）。
+- Codemagicのリリースビルドでは**本番広告ID**を使用します（`ADMOB_USE_PRODUCTION: "true"`）。
+  ソース単体は誤配信防止のためGoogle公式テストIDを既定値として保持し、CIビルド時に切り替えます。
 
 ---
 
@@ -151,8 +152,8 @@ npx cap sync ios
 
 `codemagic.yaml` の `ADMOB_USE_PRODUCTION` で切り替えます。
 
-- `false`：Google公式テストバナー。実装確認用（現在の既定値）
-- `true`：本番バナー。テスト広告の表示確認後、最終提出ビルドのみ使用
+- `false`：Google公式テストバナー。再診断するときだけ使用
+- `true`：本番バナー。現在のCodemagic既定値（リリース用）
 
 端末ログには `[ads] consent resolved`、`[ads] requesting banner`、
 `[ads] banner loaded` または `[ads] banner failed to load` が出力されます。
@@ -202,11 +203,18 @@ Google公式仕様では、`privacyOptionsRequirementStatus`が`REQUIRED`の場�
 広告IDの切り替えは、これまでどおり先頭の定数だけで管理しています。
 
 ```js
-const USE_TEST_ADS = true; // 実機での最終確認が終わるまでtrueのまま
+const USE_TEST_ADS = true; // ソース単体の安全な既定値。Codemagicがビルド時に切り替える
 ```
 
-実機での動作確認がすべて完了し、本番広告表示を確認する段階になったら `false` に変更してください。
-テストIDと本番IDの両方の定数は既にファイル内に記載済みです。
+リリースビルドでは`codemagic.yaml`の`ADMOB_USE_PRODUCTION: "true"`により、
+ビルド前に`USE_TEST_ADS = false`へ自動変更されます。手作業で`ads.js`を書き換える必要はありません。
+テストIDと本番IDの両方の定数はファイル内に記載済みです。
+
+### 5.2 Appleの暗号化申告
+
+`ios/App/App/Info.plist`に`ITSAppUsesNonExemptEncryption = false`を設定しています。
+本アプリは追加書類が必要な非免除暗号化を実装していないため、App Store Connectで
+ビルドごとに暗号化の質問へ回答する手間を省く設定です。
 
 ---
 
