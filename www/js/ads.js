@@ -77,6 +77,8 @@
     _privacyOptionsRequired: false,
     _onPrivacyOptionsChange: null,
     _listenersRegistered: false,
+    _umpDiagnostic: "",
+    _umpDiagnosticError: false,
 
     _setDiagnostic(message, isError) {
       if (!USE_TEST_ADS || !global.document) return;
@@ -95,6 +97,7 @@
           "font:12px/1.35 -apple-system,BlinkMacSystemFont,sans-serif",
           "color:#fff",
           "text-align:center",
+          "white-space:pre-line",
           "pointer-events:none",
           "box-shadow:0 2px 8px rgba(0,0,0,.25)"
         ].join(";");
@@ -102,6 +105,19 @@
       }
       node.style.background = isError ? "#B42318" : "#333333";
       node.textContent = "AdMob診断: " + message;
+    },
+
+    _setUmpDiagnostic(message, isError) {
+      this._umpDiagnostic = message || "";
+      this._umpDiagnosticError = !!isError;
+      this._setDiagnostic(this._umpDiagnostic, this._umpDiagnosticError);
+    },
+
+    _setBannerDiagnostic(message, isError) {
+      const combined = this._umpDiagnostic
+        ? this._umpDiagnostic + "\n" + message
+        : message;
+      this._setDiagnostic(combined, this._umpDiagnosticError || !!isError);
     },
 
     async _registerDiagnosticListeners(AdMob) {
@@ -112,12 +128,12 @@
           mode: USE_TEST_ADS ? "test" : "production",
           adUnitId: BANNER_UNIT_ID
         });
-        this._setDiagnostic("テスト広告の読み込み成功", false);
+        this._setBannerDiagnostic("広告読み込み成功", false);
       });
       await AdMob.addListener("bannerAdFailedToLoad", (error) => {
         console.error("[ads] banner failed to load", error);
         const detail = error && (error.message || error.code);
-        this._setDiagnostic(
+        this._setBannerDiagnostic(
           "読み込み失敗" + (detail ? " / " + detail : ""),
           true
         );
@@ -152,6 +168,8 @@
     },
 
     async init() {
+      this._umpDiagnostic = "";
+      this._umpDiagnosticError = false;
       this._setDiagnostic("プラグインを確認中", false);
       const AdMob = getPlugin();
       if (!AdMob) {
@@ -195,8 +213,8 @@
           !!consentInfo && consentInfo.privacyOptionsRequirementStatus === "REQUIRED"
         );
 
-        this._setDiagnostic(
-          "UMP=" + (consentInfo && consentInfo.status) +
+        this._setUmpDiagnostic(
+          "UMP確認成功 / status=" + (consentInfo && consentInfo.status) +
             " / canRequestAds=" + !!(consentInfo && consentInfo.canRequestAds),
           false
         );
@@ -208,7 +226,11 @@
           }
           // 診断ビルドではGoogle公式テスト広告まで処理を進め、
           // UMPとプラグイン／バナー経路のどちらが原因かを切り分ける。
-          this._setDiagnostic("UMP未許可 / テスト広告で経路確認を続行", false);
+          this._setUmpDiagnostic(
+            "UMP確認成功 / status=" + (consentInfo && consentInfo.status) +
+              " / canRequestAds=false（テスト広告のみ続行）",
+            true
+          );
         }
 
       } catch (e) {
@@ -220,7 +242,11 @@
         }
         // 診断ビルドだけはGoogle公式テスト広告へ進み、
         // UMPとバナー実装の問題を切り分ける。本番広告IDでは絶対に実行しない。
-        this._setDiagnostic("UMP失敗 / テスト広告で経路確認を続行", false);
+        this._setUmpDiagnostic(
+          "UMP確認失敗 / " + (e && e.message ? e.message : String(e)) +
+            "（テスト広告のみ続行）",
+          true
+        );
       }
 
       await this.showBanner();
@@ -235,7 +261,7 @@
           mode: USE_TEST_ADS ? "test" : "production",
           adUnitId: BANNER_UNIT_ID
         });
-        this._setDiagnostic("Google公式テスト広告をリクエスト中", false);
+        this._setBannerDiagnostic("Google公式テスト広告をリクエスト中", false);
         await AdMob.showBanner({
           adId: BANNER_UNIT_ID,
           adSize: USE_TEST_ADS ? "BANNER" : "ADAPTIVE_BANNER",

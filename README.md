@@ -157,6 +157,8 @@ npx cap sync ios
 端末ログには `[ads] consent resolved`、`[ads] requesting banner`、
 `[ads] banner loaded` または `[ads] banner failed to load` が出力されます。
 テスト広告モードでは、同じ進行状況を画面下部の「AdMob診断」欄にも表示します。
+最終診断版ではUMP結果とバナー結果を改行して同時に保持するため、広告表示後も
+`UMP確認成功 / status=... / canRequestAds=...` または `UMP確認失敗 / ...` を確認できます。
 この欄は `ADMOB_USE_PRODUCTION: "true"` の本番ビルドでは表示されません。
 テスト広告が表示されれば実装経路は正常です。本番だけ表示されない場合は、AdMob側の配信待ち・
 No Fill・配信制限を確認してください。
