@@ -78,6 +78,32 @@
     _onPrivacyOptionsChange: null,
     _listenersRegistered: false,
 
+    _setDiagnostic(message, isError) {
+      if (!USE_TEST_ADS || !global.document) return;
+      let node = global.document.getElementById("admob-diagnostic");
+      if (!node) {
+        node = global.document.createElement("div");
+        node.id = "admob-diagnostic";
+        node.style.cssText = [
+          "position:fixed",
+          "left:8px",
+          "right:8px",
+          "bottom:58px",
+          "z-index:2147483647",
+          "padding:8px 10px",
+          "border-radius:8px",
+          "font:12px/1.35 -apple-system,BlinkMacSystemFont,sans-serif",
+          "color:#fff",
+          "text-align:center",
+          "pointer-events:none",
+          "box-shadow:0 2px 8px rgba(0,0,0,.25)"
+        ].join(";");
+        global.document.body.appendChild(node);
+      }
+      node.style.background = isError ? "#B42318" : "#333333";
+      node.textContent = "AdMob診断: " + message;
+    },
+
     async _registerDiagnosticListeners(AdMob) {
       if (this._listenersRegistered || typeof AdMob.addListener !== "function") return;
       this._listenersRegistered = true;
@@ -86,9 +112,15 @@
           mode: USE_TEST_ADS ? "test" : "production",
           adUnitId: BANNER_UNIT_ID
         });
+        this._setDiagnostic("テスト広告の読み込み成功", false);
       });
       await AdMob.addListener("bannerAdFailedToLoad", (error) => {
         console.error("[ads] banner failed to load", error);
+        const detail = error && (error.message || error.code);
+        this._setDiagnostic(
+          "読み込み失敗" + (detail ? " / " + detail : ""),
+          true
+        );
       });
     },
 
@@ -120,10 +152,12 @@
     },
 
     async init() {
+      this._setDiagnostic("プラグインを確認中", false);
       const AdMob = getPlugin();
       if (!AdMob) {
         // ブラウザ確認時やプラグイン未導入時は、ボタンも非表示のまま安全にスキップする。
         this._updatePrivacyOptionsRequired(false);
+        this._setDiagnostic("AdMobプラグイン未検出", true);
         return;
       }
 
@@ -132,6 +166,7 @@
         await AdMob.initialize({
           initializeForTesting: USE_TEST_ADS
         });
+        this._setDiagnostic("SDK初期化済み / UMP確認中", false);
         await this._registerDiagnosticListeners(AdMob);
 
         const consentInfo = await resolveConsent(AdMob);
@@ -148,10 +183,20 @@
           !!consentInfo && consentInfo.privacyOptionsRequirementStatus === "REQUIRED"
         );
 
+        this._setDiagnostic(
+          "UMP=" + (consentInfo && consentInfo.status) +
+            " / canRequestAds=" + !!(consentInfo && consentInfo.canRequestAds),
+          false
+        );
+
         if (!consentInfo || !consentInfo.canRequestAds) {
-          // 同意が得られておらず広告をリクエストできない状態では、
-          // 無理に初期化・表示を行わない（名前生成には影響しない）。
-          return;
+          if (!USE_TEST_ADS) {
+            // 本番広告はUMPが許可する場合だけリクエストする。
+            return;
+          }
+          // 診断ビルドではGoogle公式テスト広告まで処理を進め、
+          // UMPとプラグイン／バナー経路のどちらが原因かを切り分ける。
+          this._setDiagnostic("UMP未許可 / テスト広告で経路確認を続行", false);
         }
 
         await this.showBanner();
@@ -159,6 +204,10 @@
         // 同意処理・広告初期化に失敗してもアプリ本体は通常動作させる。
         console.warn("[ads] AdMob consent/initialization failed", e);
         this._updatePrivacyOptionsRequired(false);
+        this._setDiagnostic(
+          "初期化またはUMP失敗 / " + (e && e.message ? e.message : String(e)),
+          true
+        );
       }
     },
 
@@ -171,9 +220,10 @@
           mode: USE_TEST_ADS ? "test" : "production",
           adUnitId: BANNER_UNIT_ID
         });
+        this._setDiagnostic("Google公式テスト広告をリクエスト中", false);
         await AdMob.showBanner({
           adId: BANNER_UNIT_ID,
-          adSize: "ADAPTIVE_BANNER",
+          adSize: USE_TEST_ADS ? "BANNER" : "ADAPTIVE_BANNER",
           position: "BOTTOM_CENTER",
           margin: 0,
           isTesting: USE_TEST_ADS,
@@ -182,6 +232,10 @@
         });
       } catch (e) {
         console.warn("[ads] showBanner failed", e);
+        this._setDiagnostic(
+          "showBanner呼び出し失敗 / " + (e && e.message ? e.message : String(e)),
+          true
+        );
       }
     },
 
