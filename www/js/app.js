@@ -7,7 +7,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "1.0.0";
+  const APP_VERSION = "1.0.1";
   const PRIVACY_POLICY_URL = "https://yscaesar3-pixel.github.io/NamaeGacha-app/privacy.html";
   const DATA_LICENSE_URL = "https://www.edrdg.org/edrdg/licence.html";
 

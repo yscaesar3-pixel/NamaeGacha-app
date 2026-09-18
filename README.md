@@ -1,5 +1,10 @@
 # なまえガチャ（初期版）
 
+現在のリリースバージョンは `1.0.1` です。Codemagicでは `APP_VERSION` を
+`MARKETING_VERSION`へ反映し、ビルド番号はCodemagicのビルド番号を使用します。
+App Storeで同じバージョンが承認済みになった後は、次回提出前に `APP_VERSION` を
+`1.0.2` など未使用の上位バージョンへ変更してください。
+
 `NamaeGacha_Claude_Implementation_Spec.md` を実装基準として作成した、iPhone専用アプリの初期版です。
 HTML / CSS / JavaScript で実装し、Capacitorを使ってiOSアプリ化する構成になっています。
 
