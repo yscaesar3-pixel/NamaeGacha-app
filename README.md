@@ -142,6 +142,18 @@ npx cap sync ios
 
 ## 5. AdMobの同意処理と本番IDへの切り替え
 
+### Codemagicでの広告モード
+
+`codemagic.yaml` の `ADMOB_USE_PRODUCTION` で切り替えます。
+
+- `false`：Google公式テストバナー。実装確認用（現在の既定値）
+- `true`：本番バナー。テスト広告の表示確認後、最終提出ビルドのみ使用
+
+端末ログには `[ads] consent resolved`、`[ads] requesting banner`、
+`[ads] banner loaded` または `[ads] banner failed to load` が出力されます。
+テスト広告が表示されれば実装経路は正常です。本番だけ表示されない場合は、AdMob側の配信待ち・
+No Fill・配信制限を確認してください。
+
 `www/js/ads.js` はアプリ起動時に、まずGoogle User Messaging Platform（UMP）で同意情報を取得し
 （`requestConsentInfo`）、同意フォームが必要な場合のみ表示します（`showConsentForm`）。
 広告リクエスト可否（`canRequestAds`）が確認できた場合のみAdMobを初期化し、バナーを表示します。

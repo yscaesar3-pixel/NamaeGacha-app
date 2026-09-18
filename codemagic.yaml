@@ -11,6 +11,8 @@ workflows:
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
+        # 広告表示経路を確認するまでは false。最終提出ビルドだけ true にする。
+        ADMOB_USE_PRODUCTION: "false"
       node: latest
       xcode: latest
       cocoapods: default
@@ -19,9 +21,14 @@ workflows:
         script: |
           npm install
 
-      - name: Switch AdMob to production ad unit (release build only)
+      - name: Select AdMob test or production mode
         script: |
-          sed -i '' 's/const USE_TEST_ADS = true;/const USE_TEST_ADS = false;/' www/js/ads.js
+          if [ "${ADMOB_USE_PRODUCTION:-false}" = "true" ]; then
+            sed -i '' 's/const USE_TEST_ADS = true;/const USE_TEST_ADS = false;/' www/js/ads.js
+            echo "AdMob mode: production"
+          else
+            echo "AdMob mode: Google official test banner"
+          fi
 
       - name: Capacitor sync (SPM, no CocoaPods)
         script: |

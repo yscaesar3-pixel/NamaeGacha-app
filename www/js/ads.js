@@ -65,8 +65,8 @@
 
     let consentInfo = await AdMob.requestConsentInfo(requestOptions);
 
-    if (consentInfo.isConsentFormAvailable && consentInfo.status === "REQUIRED") {
-      // 同意が必要な場合のみフォームを表示する（対象地域・条件はUMP側の設定に従う）。
+    if (!consentInfo.canRequestAds && consentInfo.isConsentFormAvailable) {
+      // UMP SDK自身に「必要な場合だけ表示」を判断させる。
       consentInfo = await AdMob.showConsentForm();
     }
 
@@ -76,6 +76,21 @@
   const AdManager = {
     _privacyOptionsRequired: false,
     _onPrivacyOptionsChange: null,
+    _listenersRegistered: false,
+
+    async _registerDiagnosticListeners(AdMob) {
+      if (this._listenersRegistered || typeof AdMob.addListener !== "function") return;
+      this._listenersRegistered = true;
+      await AdMob.addListener("bannerAdLoaded", () => {
+        console.info("[ads] banner loaded", {
+          mode: USE_TEST_ADS ? "test" : "production",
+          adUnitId: BANNER_UNIT_ID
+        });
+      });
+      await AdMob.addListener("bannerAdFailedToLoad", (error) => {
+        console.error("[ads] banner failed to load", error);
+      });
+    },
 
     /**
      * 「プライバシー設定」ボタンの表示/非表示が変わったときに呼ばれるコールバックを登録する。
@@ -113,7 +128,21 @@
       }
 
       try {
+        // capacitor-community/admob v8の推奨順序に合わせ、最初にSDKを初期化する。
+        await AdMob.initialize({
+          initializeForTesting: USE_TEST_ADS
+        });
+        await this._registerDiagnosticListeners(AdMob);
+
         const consentInfo = await resolveConsent(AdMob);
+
+        console.info("[ads] consent resolved", {
+          status: consentInfo && consentInfo.status,
+          canRequestAds: !!(consentInfo && consentInfo.canRequestAds),
+          privacyOptionsRequirementStatus:
+            consentInfo && consentInfo.privacyOptionsRequirementStatus,
+          mode: USE_TEST_ADS ? "test" : "production"
+        });
 
         this._updatePrivacyOptionsRequired(
           !!consentInfo && consentInfo.privacyOptionsRequirementStatus === "REQUIRED"
@@ -124,10 +153,6 @@
           // 無理に初期化・表示を行わない（名前生成には影響しない）。
           return;
         }
-
-        await AdMob.initialize({
-          initializeForTesting: USE_TEST_ADS
-        });
 
         await this.showBanner();
       } catch (e) {
@@ -142,6 +167,10 @@
       if (!AdMob) return;
 
       try {
+        console.info("[ads] requesting banner", {
+          mode: USE_TEST_ADS ? "test" : "production",
+          adUnitId: BANNER_UNIT_ID
+        });
         await AdMob.showBanner({
           adId: BANNER_UNIT_ID,
           adSize: "ADAPTIVE_BANNER",
