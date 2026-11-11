@@ -1,282 +1,169 @@
-# なまえガチャ（初期版）
+# なまえガチャ 1.1.0
 
-現在のリリースバージョンは `1.0.1` です。Codemagicでは `APP_VERSION` を
-`MARKETING_VERSION`へ反映し、ビルド番号はCodemagicのビルド番号を使用します。
-App Storeで同じバージョンが承認済みになった後は、次回提出前に `APP_VERSION` を
-`1.0.2` など未使用の上位バージョンへ変更してください。
+iPhone専用のランダム姓名メーカーです。HTML/CSS/JavaScriptとCapacitorで構成し、
+WindowsからCodemagicを使用してApp Store向けにビルドします。
 
-`NamaeGacha_Claude_Implementation_Spec.md` を実装基準として作成した、iPhone専用アプリの初期版です。
-HTML / CSS / JavaScript で実装し、Capacitorを使ってiOSアプリ化する構成になっています。
+## 1.1.0の主な変更
 
-- `www/` 以下に機能別のファイル構成で分離しています。
-- 正式データ22,000件（姓10,000件・名12,000件）を組み込み済みです。
-- PCでの直接確認用に `name_data.js` も同梱しています。iPhone版はJSONを使用します。
-- Codemagicのリリースビルドでは**本番広告ID**を使用します（`ADMOB_USE_PRODUCTION: "true"`）。
-  ソース単体は誤配信防止のためGoogle公式テストIDを既定値として保持し、CIビルド時に切り替えます。
+- 日本名データを姓20,000件・名20,000件へ増量
+- 漢字表記だけで姓名を検索
+- 「自分の名前は何回目？」チャレンジと端末内ベスト記録
+- 未登録名の外部フォームへの追加リクエスト
+- 重複なしの10連ガチャ
+- 通常・10連・チャレンジ結果の1200×1200画像共有
+- 既存履歴・お気に入りを保持する保存形式移行
+- 高コントラストの和モダンUI
+- 既存のAdMob／UMP／非パーソナライズ広告方針を維持
 
----
-
-## 1. フォルダ構成
+## 主要構成
 
 ```text
-namaegacha/
-├── www/                     ← アプリ本体（Web資産）
-│   ├── index.html
-│   ├── css/app.css
-│   ├── js/
-│   │   ├── app.js           画面遷移・イベント処理
-│   │   ├── generator.js     3段階rarity抽選ロジック
-│   │   ├── storage.js       条件・履歴・お気に入りの端末保存
-│   │   └── ads.js           AdMobバナー（テストID使用）
-│   ├── data/
-│   │   ├── surnames.json    正式姓データ（10,000件）
-│   │   ├── given_names.json 正式名データ（12,000件）
-│   │   ├── name_data.js     PC直接確認用データ
-│   │   └── data_sources.json
-│   └── assets/
-│       └── icon-placeholder.svg  仮アイコン案（本番アイコンは別途用意）
-├── tools/
-│   └── validate_name_data.js     データ検査スクリプト（Node実行）
-├── capacitor.config.json
-├── package.json
-└── README.md
+www/
+├─ index.html
+├─ css/app.css
+├─ js/
+│  ├─ app.js
+│  ├─ generator.js
+│  ├─ storage.js
+│  ├─ share.js
+│  └─ ads.js
+└─ data/
+   ├─ manifest.json
+   ├─ surnames.json
+   ├─ given_names.json
+   ├─ name_data.js
+   └─ data_sources.json
+
+docs/
+├─ index.html
+├─ privacy.html
+└─ support.html
+
+tools/
+├─ build_name_data.py
+├─ validate_name_data.js
+├─ test_generator.js
+├─ test_priority_surnames.js
+└─ test_v110.js
 ```
 
-`ios/` フォルダはまだ含まれていません。後述の手順でCapacitorが自動生成します。
+## ブラウザ確認
 
----
-
-## 2. ブラウザで動作確認する（一番手軽な確認方法）
-
-Xcodeがなくても、まずはPCのブラウザでロジックとUIを確認できます。
+ZIPを展開し、プロジェクト直下で実行します。
 
 ```bash
-cd namaegacha/www
-npx serve .
-# もしくは: python3 -m http.server 8080
+npx serve www
 ```
 
-表示されたURL（例: `http://localhost:3000` や `http://localhost:8080`）をブラウザで開いてください。
-広告SDK（AdMobプラグイン）が存在しない環境なので、広告枠は空のまま表示されますが、それ以外の機能はすべて確認できます。
-
-ZIPを右クリックして「すべて展開」した後、`www/index.html`をダブルクリックする方法でも確認できます。
-圧縮フォルダ内から直接開くとCSS等が一時フォルダへコピーされず、正しく表示されないため、必ず先に展開してください。
-直接起動時は `www/data/name_data.js`、サーバー・iPhone環境ではJSONを使用します。
-
----
-
-## 3. データ検査スクリプトを実行する
+または、
 
 ```bash
-cd namaegacha
-node tools/validate_name_data.js
+cd www
+python3 -m http.server 8080
 ```
 
-JSON構文、ID重複、ID形式、漢字＋読みの重複、`rarity`／`categories`の値、
-各性別条件・各rarityで候補が0件になっていないか、ひらがな以外の文字混入などを検査します。
+`www/index.html`の直接起動にも対応しています。直接起動時は、JSONの取得に失敗した場合のみ
+`name_data.js`を読み込みます。広告とネイティブ共有シートはブラウザでは使用されません。
 
-正式な22,000件データに差し替えたときは、件数まで含めて厳密に検査できます。
+## 検査
 
 ```bash
-node tools/validate_name_data.js --strict-counts
-# 姓10,000件・名12,000件（male 5,000 / female 5,000 / neutral 2,000）を必須条件にする
+npm run validate-data:strict
+npm run test:generator
+npm run test:priority-surnames
+npm run test:v110
 ```
 
-### 3.1 生成ロジック（直前重複回避）の自動テスト
+厳密検査では以下を必須とします。
 
-`generator.js`の「直前と同じ姓名を絶対に返さない」ロジックを検査するテストです。
+- 姓20,000件
+- 名20,000件
+- 男性主分類8,000件
+- 女性主分類8,000件
+- 性別未分類4,000件
+- ID、表記＋読み、カテゴリー、内部レア度の整合性
+
+## 姓名データ再生成
+
+同じ版のJMnedict JSONとKANJIDIC2 JSONを展開し、現在の公開データを基礎として実行します。
 
 ```bash
-node tools/test_generator.js
+python3 tools/build_name_data.py JMnedict.json KANJIDIC2.json www/data \
+  --base-surnames www/data/surnames.json \
+  --base-given-names www/data/given_names.json
 ```
 
-以下を確認しています。
+人口順CSVが利用できる場合は`--surname-frequency CSV_PATH`も指定できます。
+既存データを先に維持し、不足分だけ追加するため、公開済みの名前が増量によって脱落しません。
 
-- 組み合わせが実質1通りしかない条件で、直前と同じ結果になりうる場合は、結果を返さず専用エラー（`ONLY_DUPLICATE_AVAILABLE`）になること
-- 姓または名のどちらかしか候補が無くても、複数組み合わせが存在する限り必ず直前と異なる結果になること
-- 初回生成（直前の結果が無い状態）はエラーにならないこと
-- 実際のサンプルデータで各生成条件ごとに5,000回生成しても、直前との重複が一度も発生しないこと
+## 外部リンク設定
 
----
+`www/js/app.js`先頭付近に以下を設定済みです。
 
-## 4. Capacitorでネイティブプロジェクトを作る
+- App Store公開ページ
+- 名前追加リクエスト用Googleフォーム
+- 「名前の種類」と「漢字表記」の事前入力項目ID
 
-### 4.1 依存パッケージのインストール
+Googleフォームは以下を確認します。
+
+- メールアドレスを収集しない
+- Googleログインを必須にしない
+- 姓／名、表記、読みを入力できる
+- 個人情報を入力しない旨を表示する
+
+## iOSと共有プラグイン
+
+1.1.0では以下を使用します。
+
+- `@capacitor-community/admob`
+- `@capacitor/browser`
+- `@capacitor/share`
+- `@capacitor/filesystem`
+
+依存関係をインストールし、iOSへ同期します。
 
 ```bash
-cd namaegacha
 npm install
-```
-
-### 4.2 bundle IDの確認（重要）
-
-`capacitor.config.json` の `appId` は仮の値 `com.example.namaegacha` です。
-**iOSプロジェクトを作る前に**、実際に使うbundle ID（例: `com.yourcompany.namaegacha`）に書き換えてください。
-`cap add ios` の後で `appId` を変えると手直しが増えるため、先に決めておくのがおすすめです。
-
-### 4.3 iOSプロジェクトの追加
-
-```bash
-npx cap add ios
 npx cap sync ios
 ```
 
-> **ご利用の開発環境について**
-> Capacitorの `ios/` プロジェクトを開いてビルドするには、実際にはXcode（＝Mac環境）が必要です。
-> Windows環境から直接Xcodeビルドはできないため、以下のいずれかで対応してください。
-> - **Codemagic**（`mac_mini_m2`）などのクラウドMac CI/CDサービスにリポジトリを接続してビルド
-> - 一時的に借りられるクラウドMac、または知人・共有のMac環境でXcodeを開く
->
-> `npx cap add ios` 自体はWindows上でも実行できます（`ios/` フォルダの生成のみ）。
-> 実際のビルド・実機インストール・App Store Connectへのアップロードの工程でMac相当の環境が必要になります。
+## Codemagic
 
-### 4.4 iOS側で追加設定が必要な項目
+`codemagic.yaml`の`APP_VERSION`は`1.1.0`です。
+ビルド番号はCodemagicの`PROJECT_BUILD_NUMBER`を使用します。
 
-`ios/` プロジェクト生成後、Xcode（またはCI設定）側で以下を確認してください。
+`ADMOB_USE_PRODUCTION: "true"`の場合、ビルド時に`ads.js`を本番広告モードへ切り替えます。
+ソースではGoogle公式テスト広告を既定値として維持します。
 
-- **画面向きの固定**：`Info.plist` の `UISupportedInterfaceOrientations` を縦向きのみにする
-- **AdMob**：`Info.plist` に以下を追加
-  - `GADApplicationIdentifier`（開発中はテスト用アプリID `ca-app-pub-3940256099942544~1458002511`、本番時は仕様書記載の `ca-app-pub-8174756915786797~2259245053`）
-  - `NSUserTrackingUsageDescription` は**追加しない**：この初期版は`requestTrackingAuthorization()`を呼び出さず、ATT（App Tracking Transparency）のダイアログを一切表示しない。常に非パーソナライズ広告のみをリクエストするため、ATT許可自体が不要。
-  - **AppTrackingTransparencyフレームワークも追加しない**（ATTを使わないため）。
-  - 将来、実際にATT（IDFAを使ったパーソナライズ広告など）を導入する場合のみ、公式要件に従って`NSUserTrackingUsageDescription`とAppTrackingTransparencyフレームワークの両方を追加し、UMPの同意取得が完了した後に`requestTrackingAuthorization()`を呼び出すよう実装を変更すること。
-  - 同意（UMP）まわりはコード側（`www/js/ads.js`）で処理するため、Info.plistへの追加設定は不要です。
-- **`@capacitor-community/admob` プラグイン**：`npx cap sync ios` 実行後、Podが正しくインストールされていることを確認
-- カメラ・写真・位置情報・連絡先・通知などの権限リクエストは追加していません（仕様通り不要）
+## AdMob・UMP
 
----
+- 本番AdMobアプリIDとバナーIDは既存設定を維持
+- UMP確認後に広告をリクエスト
+- バナーは非パーソナライズ広告
+- ATTを呼び出さない
+- UMPまたは広告が失敗してもアプリ機能を止めない
+- プライバシー設定が必要な場合だけ情報画面に再表示ボタンを出す
 
-## 5. AdMobの同意処理と本番IDへの切り替え
+## 保存データの移行
 
-### Codemagicでの広告モード
+1.0.1の以下のデータを1.1.0初回起動時に保持して移行します。
 
-`codemagic.yaml` の `ADMOB_USE_PRODUCTION` で切り替えます。
+- 選択カテゴリー
+- 履歴
+- お気に入り
 
-- `false`：Google公式テストバナー。再診断するときだけ使用
-- `true`：本番バナー。現在のCodemagic既定値（リリース用）
+チャレンジのベスト記録は1.1.0から追加されます。履歴は最大100件相当で、
+10連結果は10件を1グループとして保存します。
 
-端末ログには `[ads] consent resolved`、`[ads] requesting banner`、
-`[ads] banner loaded` または `[ads] banner failed to load` が出力されます。
-テスト広告モードでは、同じ進行状況を画面下部の「AdMob診断」欄にも表示します。
-最終診断版ではUMP結果とバナー結果を改行して同時に保持するため、広告表示後も
-`UMP確認成功 / status=... / canRequestAds=...` または `UMP確認失敗 / ...` を確認できます。
-この欄は `ADMOB_USE_PRODUCTION: "true"` の本番ビルドでは表示されません。
-テスト広告が表示されれば実装経路は正常です。本番だけ表示されない場合は、AdMob側の配信待ち・
-No Fill・配信制限を確認してください。
+## 提出前確認
 
-`www/js/ads.js` はアプリ起動時に、まずGoogle User Messaging Platform（UMP）で同意情報を取得し
-（`requestConsentInfo`）、同意フォームが必要な場合のみ表示します（`showConsentForm`）。
-AdMob SDKを初期化した後、広告リクエスト可否（`canRequestAds`）を確認してバナーを表示します。
-ただし診断用のGoogle公式テスト広告に限り、UMP取得が失敗しても表示処理まで進めます。
-これはUMPとバナー実装のどちらに原因があるかを切り分けるためで、本番広告ではUMP取得に
-失敗した場合は広告リクエストを行いません。
+- GoogleフォームとApp Store URLが開けることを確認
+- `docs/privacy.html`と`docs/support.html`を公開先へ反映
+- TestFlightで1.0.1から上書き更新
+- 履歴とお気に入りが残ることを確認
+- 共有画像、10連、検索、チャレンジを実機確認
+- テスト広告で共有プラグインを含むビルドを確認後、本番広告で最終ビルド
+- 本番版にAdMob診断表示が出ないことを確認
 
-- アプリ起動直後に独自判断でATT（App Tracking Transparency）ダイアログを表示することはありません。
-  `requestTrackingAuthorization()` は呼び出していません。
-- バナー広告は常に非パーソナライズ広告（`npa: true`）としてリクエストするため、IDFAによるトラッキングを行わず、
-  ATT許可が無くても広告を表示できます。
-- 同意情報の取得・同意フォーム表示・広告初期化のいずれかに失敗しても、例外は`ads.js`内で握りつぶし、
-  名前生成など他の機能には影響しません。
-- ブラウザでの確認時（AdMobプラグイン未導入）は、これらの処理はすべて安全にスキップされます。
-- アプリを開くたびに（毎回の起動時に）同意情報を取得し直すため、地域や同意状況の変化にも追従します。
+姓名データの出典とライセンスは`DATA_NOTICE.md`を参照してください。
 
-### 5.1 「プライバシー設定」ボタン（UMPの再表示導線）
-
-Google公式仕様では、`privacyOptionsRequirementStatus`が`REQUIRED`の場合、ユーザーが後から同意内容を
-確認・変更できる導線が必要です。この初期版では、ホーム画面の情報ポップアップ内に「プライバシー設定」
-ボタンを用意し、次のように動作します。
-
-- `ads.js`が起動時（毎回）に`requestConsentInfo()`の結果から`privacyOptionsRequirementStatus`を判定し、
-  `REQUIRED`のときだけボタンを表示、それ以外（`NOT_REQUIRED` / `UNKNOWN`）では非表示にします。
-- ボタンをタップすると`AdMob.showPrivacyOptionsForm()`を呼び出し、UMPの設定フォームを表示します。
-- フォーム表示に失敗した場合は、画面下部に短いトースト（「プライバシー設定を開けませんでした」）を
-  表示するだけで、アプリは通常どおり動作を続けます。
-- ブラウザ確認時（AdMobプラグイン未導入）はボタンは常に非表示になります。
-
-**動作確認方法**：日本国内の実機・シミュレータでは通常`privacyOptionsRequirementStatus`が
-`REQUIRED`にならずボタンは表示されません。表示条件を手元で確認したい場合は、`ads.js`の
-`resolveConsent()`内にある`requestOptions`に、開発中のみ一時的に
-`debugGeography: 1`（`AdmobConsentDebugGeography.EEA`相当の値）と、実機のテストデバイスIDを
-`testDeviceIdentifiers`に指定してビルドし、EEA地域向けの同意フローを強制してください。
-確認が終わったら必ず元（空のオブジェクト）に戻し、本番ビルドには反映しないでください。
-
-広告IDの切り替えは、これまでどおり先頭の定数だけで管理しています。
-
-```js
-const USE_TEST_ADS = true; // ソース単体の安全な既定値。Codemagicがビルド時に切り替える
-```
-
-リリースビルドでは`codemagic.yaml`の`ADMOB_USE_PRODUCTION: "true"`により、
-ビルド前に`USE_TEST_ADS = false`へ自動変更されます。手作業で`ads.js`を書き換える必要はありません。
-テストIDと本番IDの両方の定数はファイル内に記載済みです。
-
-### 5.2 Appleの暗号化申告
-
-`ios/App/App/Info.plist`に`ITSAppUsesNonExemptEncryption = false`を設定しています。
-本アプリは追加書類が必要な非免除暗号化を実装していないため、App Store Connectで
-ビルドごとに暗号化の質問へ回答する手間を省く設定です。
-
----
-
-## 6. 正式な姓名データへの差し替え方法
-
-正式データを組み込み済みです。
-
-- 姓：10,000件
-- 名：12,000件（男性5,000件、女性5,000件、性別未分類2,000件）
-- 中性的フィルター対象：80件（上記12,000件内の複数分類）
-- 同じ表記でも読みが異なる場合は別データとして扱う
-- `primaryCategory=unspecified` は「中性的」を意味しない
-
-JMnedictの品詞分類を基礎にし、KANJIDIC2の音読み・訓読み・名乗りとの分割照合、文字種、長さ、
-重複、使用漢字等の機械検査を通しています。中性的分類は読みだけでは判定せず、表記と読みの組を
-保守的に選定しています。`rarity`は人口統計上の順位ではなく、アプリ内抽選用の相対的な指標です。
-
-再生成する場合は、同版のJMnedict JSONとKANJIDIC2 JSONを用意し、次を実行します。
-
-```bash
-python3 tools/build_name_data.py <JMnedict JSON> <KANJIDIC2 JSON> www/data \
-  --surname-frequency <姓・順位・件数CSV>
-node tools/validate_name_data.js --strict-counts
-node tools/test_generator.js
-```
-
-データの出典・ライセンス・取得版は `DATA_NOTICE.md` と `www/data/data_sources.json` を参照してください。
-再生成時には、PC直接確認用の `www/data/name_data.js` も同時に更新されます。
-
-置き換え後は、ホーム画面の情報ポップアップ等で収録数（22,000件）の文言を表示する場合、
-サンプル段階では表示しない設計になっている点を確認してください（現状のポップアップ文言には収録数を含めていません）。
-
----
-
-## 7. 実機確認チェックリスト
-
-仕様書20章の完了条件に対応する確認項目です。
-
-- [ ] 縦向き固定で、ホーム／結果／履歴・お気に入りの3画面を操作できる
-- [ ] 生成条件「すべて／男性／女性／中性的」がそれぞれ正しく候補を絞り込む
-- [ ] 同じ条件で何度も生成しても、直前と全く同じ姓名が連続しない
-- [ ] 複数カテゴリー所属の名（例：`光`＝`ひかる`）が重複候補にならず、条件をまたいで自然に出現する
-- [ ] 履歴が新しい順で最大100件、101件目追加時に最古の1件が消える
-- [ ] 「履歴をすべて削除」に確認ダイアログが出て、お気に入りには影響しない
-- [ ] お気に入りの登録・解除・重複登録防止が機能する
-- [ ] コピー機能で「姓 名」（半角スペース区切り、漢字のみ）がクリップボードに入り、完了トーストが出る
-- [ ] アプリを再起動しても、選択していた生成条件・履歴・お気に入りが復元される
-- [ ] 履歴・お気に入り一覧から名前を開いても、新しい履歴として増えない
-- [ ] 機内モードなどでJSON読み込みに失敗しても、エラー表示のみでアプリが停止しない
-- [ ] 選択した条件に合う名が0件のケースで、勝手に条件を変えずエラー表示になる（サンプルデータでは全条件に候補があるため、確認する場合は一時的にデータを空にするなどして検証）
-- [ ] 直前と同じ姓名が正常終了時に返らないこと（`node tools/test_generator.js`で自動検査済み。組み合わせが実質1通りしかない場合は専用エラーメッセージが表示される）
-- [ ] 初回のAdMob表示時、アプリが独自にATTダイアログを出さないこと（UMPの同意フローのみが動作し、広告は常に非パーソナライズとしてリクエストされる）
-- [ ] `privacyOptionsRequirementStatus`が`REQUIRED`でない通常の状態では、情報ポップアップ内に「プライバシー設定」ボタンが表示されないこと
-- [ ] （EEA地域を模したデバッグ設定などで）`REQUIRED`になる状況を再現した場合、ボタンが表示され、タップでプライバシー設定フォームが開くこと。表示に失敗してもアプリが止まらずトーストだけ出ること
-- [ ] AdMobがテストバナーとして表示され、広告読み込み失敗時も名前生成には影響しない
-- [ ] 画面下部の広告枠とボタンの間に誤タップを防ぐ余白がある
-- [ ] 仕様書18章で明示的に除外された機能（共有、意味・由来表示、姓名判断、個別コピー等）が入っていない
-
----
-
-## 8. 今回の実装範囲外（別工程）
-
-- 正式なApp Storeアイコン画像一式（`www/assets/icon-placeholder.svg` はデザイン方針の参考案）
-- プライバシーポリシーの実URL（`app.js` 内 `PRIVACY_POLICY_URL` を差し替える）
-- Xcodeでのビルド・署名・App Store Connectへのアップロード

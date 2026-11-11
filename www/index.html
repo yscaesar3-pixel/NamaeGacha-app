@@ -3,129 +3,228 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#FFF9F1">
 <title>なまえガチャ</title>
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 <div id="app">
-
-  <!-- ========== ホーム画面 ========== -->
   <section id="screen-home" class="screen active">
-    <div class="top-bar">
-      <h1 class="app-title">なまえガチャ</h1>
-      <button id="btn-info" class="icon-button" aria-label="アプリ情報">ⓘ</button>
-    </div>
-
-    <div class="content">
+    <header class="top-bar home-top">
       <div>
-        <p class="condition-label">生成条件</p>
+        <p class="eyebrow">ランダム姓名メーカー</p>
+        <h1 class="app-title">なまえガチャ</h1>
+      </div>
+      <button id="btn-info" class="icon-button" aria-label="アプリ情報">ⓘ</button>
+    </header>
+    <main class="screen-scroll home-scroll">
+      <section class="hero-card">
+        <p class="section-kicker">生成条件</p>
         <div id="condition-segment" class="segmented-control" role="tablist" aria-label="生成条件">
           <button class="segment-item" data-condition="all">すべて</button>
           <button class="segment-item" data-condition="male">男性</button>
           <button class="segment-item" data-condition="female">女性</button>
           <button class="segment-item" data-condition="neutral">中性的</button>
         </div>
-      </div>
+        <button id="btn-generate" class="primary-button generate-button" disabled>
+          <span class="button-small">1回ガチャ</span>
+          <span>名前を生成</span>
+        </button>
+        <button id="btn-generate-ten" class="gold-button" disabled>
+          <span class="button-small">まとめて楽しむ</span>
+          <span>10連ガチャ</span>
+        </button>
+        <p id="home-loading" class="status-note">名前データを読み込み中です…</p>
+        <div id="home-error" class="inline-message error-message" role="alert"></div>
+        <button id="btn-reload" class="text-button hidden">再読み込み</button>
+      </section>
 
-      <div class="home-actions">
-        <button id="btn-generate" class="primary-button" disabled>名前を生成</button>
-        <button id="btn-open-list" class="secondary-button">履歴・お気に入り</button>
-        <p id="home-loading" class="loading-note">名前データを読み込み中です…</p>
-        <p id="home-error" class="error-note"></p>
-        <button id="btn-reload" class="text-button" style="display:none;">再読み込み</button>
-      </div>
-    </div>
+      <button id="btn-open-challenge" class="challenge-entry">
+        <span class="challenge-entry-icon">運</span>
+        <span>
+          <strong>自分の名前は何回目？</strong>
+          <small>漢字だけで検索してチャレンジ</small>
+        </span>
+        <span class="chevron">›</span>
+      </button>
 
+      <div class="home-mini-actions">
+        <button id="btn-open-history" class="mini-card"><span>↻</span><strong>履歴</strong></button>
+        <button id="btn-open-favorites" class="mini-card"><span>★</span><strong>お気に入り</strong></button>
+      </div>
+    </main>
     <div class="ad-slot" id="ad-slot-home"></div>
   </section>
 
-  <!-- ========== 結果画面 ========== -->
   <section id="screen-result" class="screen">
-    <div class="top-bar">
-      <button id="btn-result-home" class="icon-button" aria-label="ホームへ戻る">‹</button>
-      <span style="width:36px;"></span>
-    </div>
-
-    <div class="content">
-      <p id="result-name" class="result-name">－　－</p>
-      <p id="result-reading" class="result-reading">－　－</p>
-      <button id="btn-result-star" class="result-star-button" aria-label="お気に入り登録">☆</button>
-      <button id="btn-result-copy" class="result-copy-button">姓名をコピー</button>
-      <p id="result-error" class="error-note"></p>
-    </div>
-
-    <div class="result-actions">
-      <button id="btn-regenerate" class="primary-button">もう一度生成</button>
-      <button id="btn-result-list" class="secondary-button">履歴</button>
-      <button id="btn-result-home-2" class="text-button">ホームへ戻る</button>
-    </div>
-
+    <header class="top-bar">
+      <button id="btn-result-back" class="icon-button back-button" aria-label="前の画面へ戻る">‹</button>
+      <h2 class="screen-title">ガチャ結果</h2>
+      <span class="top-spacer"></span>
+    </header>
+    <main class="screen-scroll result-layout">
+      <article class="name-result-card reveal-card">
+        <p class="section-kicker">今回の名前</p>
+        <p id="result-name" class="result-name">－　－</p>
+        <p id="result-reading" class="result-reading">－　－</p>
+        <div class="result-quick-actions">
+          <button id="btn-result-star" class="circle-action" aria-label="お気に入り登録">☆</button>
+          <button id="btn-result-copy" class="pill-action">コピー</button>
+          <button id="btn-result-share" class="pill-action">共有</button>
+        </div>
+      </article>
+      <div id="result-error" class="inline-message error-message" role="alert"></div>
+      <div class="action-stack">
+        <button id="btn-regenerate" class="primary-button">もう一度生成</button>
+        <button id="btn-result-list" class="secondary-button">履歴を見る</button>
+        <button id="btn-result-home" class="text-button">ホームへ戻る</button>
+      </div>
+    </main>
     <div class="ad-slot" id="ad-slot-result"></div>
   </section>
 
-  <!-- ========== 履歴・お気に入り画面 ========== -->
+  <section id="screen-ten" class="screen">
+    <header class="top-bar">
+      <button id="btn-ten-home" class="icon-button back-button" aria-label="ホームへ戻る">‹</button>
+      <h2 class="screen-title">10連ガチャ結果</h2>
+      <span class="top-spacer"></span>
+    </header>
+    <main class="screen-scroll ten-layout">
+      <div id="ten-list" class="ten-list"></div>
+      <div id="ten-error" class="inline-message error-message" role="alert"></div>
+      <div class="action-stack">
+        <button id="btn-ten-share" class="gold-button compact-button">10連結果を共有</button>
+        <button id="btn-ten-again" class="primary-button">もう一度10連</button>
+        <button id="btn-ten-home-2" class="text-button">ホームへ戻る</button>
+      </div>
+    </main>
+    <div class="ad-slot" id="ad-slot-ten"></div>
+  </section>
+
+  <section id="screen-challenge-search" class="screen">
+    <header class="top-bar">
+      <button id="btn-challenge-home" class="icon-button back-button" aria-label="ホームへ戻る">‹</button>
+      <h2 class="screen-title">自分の名前は何回目？</h2>
+      <span class="top-spacer"></span>
+    </header>
+    <main class="screen-scroll challenge-layout">
+      <div class="intro-card">
+        <span class="intro-mark">運</span>
+        <p>姓と名を漢字で入力して、何回目に登場するかチャレンジ！</p>
+        <small>結果はチャレンジするたびに変わります。</small>
+      </div>
+
+      <div class="search-field-wrap">
+        <label for="challenge-surname">姓</label>
+        <div class="search-input-row">
+          <input id="challenge-surname" type="text" inputmode="text" autocomplete="off" placeholder="例：関" maxlength="12">
+          <button class="input-clear" data-target="challenge-surname" aria-label="姓を消去">×</button>
+        </div>
+        <div id="surname-suggestions" class="suggestions"></div>
+        <div id="surname-status" class="field-status"></div>
+        <button id="btn-request-surname" class="request-button hidden">この姓を追加リクエスト</button>
+      </div>
+
+      <div class="search-field-wrap">
+        <label for="challenge-given">名</label>
+        <div class="search-input-row">
+          <input id="challenge-given" type="text" inputmode="text" autocomplete="off" placeholder="例：勇太" maxlength="12">
+          <button class="input-clear" data-target="challenge-given" aria-label="名を消去">×</button>
+        </div>
+        <div id="given-suggestions" class="suggestions"></div>
+        <div id="given-status" class="field-status"></div>
+        <button id="btn-request-given" class="request-button hidden">この名を追加リクエスト</button>
+      </div>
+
+      <button id="btn-run-challenge" class="primary-button" disabled>チャレンジする</button>
+      <div id="challenge-search-error" class="inline-message error-message" role="alert"></div>
+    </main>
+    <div class="ad-slot" id="ad-slot-challenge-search"></div>
+  </section>
+
+  <section id="screen-challenge-result" class="screen">
+    <header class="top-bar">
+      <button id="btn-challenge-result-back" class="icon-button back-button" aria-label="名前検索へ戻る">‹</button>
+      <h2 class="screen-title">チャレンジ結果</h2>
+      <span class="top-spacer"></span>
+    </header>
+    <main class="screen-scroll challenge-result-layout">
+      <article class="challenge-result-card reveal-card">
+        <p id="challenge-result-name" class="challenge-person">－さんは</p>
+        <p class="challenge-caption">今回のチャレンジで</p>
+        <p id="challenge-result-count" class="challenge-count">－回目</p>
+        <div class="best-box">
+          <span>ベスト記録</span>
+          <strong id="challenge-best-count">－回目</strong>
+        </div>
+        <p class="challenge-disclaimer">結果はチャレンジするたびに変わります</p>
+      </article>
+      <div id="challenge-result-error" class="inline-message error-message" role="alert"></div>
+      <div class="action-stack">
+        <button id="btn-challenge-again" class="primary-button">もう一度チャレンジ</button>
+        <button id="btn-challenge-share" class="gold-button compact-button">結果を共有</button>
+        <button id="btn-challenge-change" class="secondary-button">名前を変更</button>
+        <button id="btn-challenge-result-home" class="text-button">ホームへ戻る</button>
+      </div>
+    </main>
+    <div class="ad-slot" id="ad-slot-challenge-result"></div>
+  </section>
+
   <section id="screen-list" class="screen">
-    <div class="top-bar">
-      <button id="btn-list-home" class="icon-button" aria-label="ホームへ戻る">‹</button>
-      <span style="width:36px;"></span>
-    </div>
-
+    <header class="top-bar">
+      <button id="btn-list-home" class="icon-button back-button" aria-label="ホームへ戻る">‹</button>
+      <h2 class="screen-title">保存した名前</h2>
+      <span class="top-spacer"></span>
+    </header>
     <div class="tab-bar" role="tablist">
-      <button id="tab-history" class="tab-item selected" data-tab="history">履歴</button>
-      <button id="tab-favorites" class="tab-item" data-tab="favorites">お気に入り</button>
+      <button id="tab-history" class="tab-item selected">履歴</button>
+      <button id="tab-favorites" class="tab-item">お気に入り</button>
     </div>
-
-    <div class="list-scroll">
+    <main class="screen-scroll list-scroll">
       <p id="list-empty-history" class="list-empty">生成した名前はまだありません</p>
       <p id="list-empty-favorites" class="list-empty">お気に入りの名前はまだありません</p>
       <div id="list-items"></div>
-    </div>
-
-    <div class="list-footer" id="list-footer-history">
-      <button id="btn-clear-history" class="text-button">履歴をすべて削除</button>
-    </div>
-
+      <button id="btn-clear-history" class="text-button danger-text">履歴をすべて削除</button>
+    </main>
     <div class="ad-slot" id="ad-slot-list"></div>
   </section>
-
 </div>
 
-<!-- ========== トースト ========== -->
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<!-- ========== 情報ポップアップ ========== -->
-<div id="modal-info" class="modal-overlay">
+<div id="modal-info" class="modal-overlay" aria-hidden="true">
   <div class="modal-sheet">
+    <div class="modal-handle"></div>
     <h2 class="modal-title">なまえガチャについて</h2>
     <div class="modal-body">
-      <p>日本で実際に使われている姓と名をランダムに組み合わせて表示します。表示された姓名の組み合わせが、実在する人物を示すものではありません。</p>
-      <p class="modal-sub">アプリバージョン：<span id="info-version">1.0.0</span></p>
-      <p class="modal-sub">姓名データの出典：JMnedict（詳細は下記リンクを参照）</p>
-      <p><a class="modal-link" id="link-data-license" href="#">データライセンス（EDRDGライセンス）を見る</a></p>
-      <p><a class="modal-link" id="link-privacy" href="#">プライバシーポリシーを見る</a></p>
-      <button id="btn-privacy-options" class="modal-privacy-button" style="display:none;">プライバシー設定</button>
+      <p>実際に使われている姓と名をランダムに組み合わせます。表示された組み合わせが、実在する人物を示すものではありません。</p>
+      <p class="modal-sub">収録データ：姓20,000件・名20,000件</p>
+      <p class="modal-sub">アプリバージョン：<span id="info-version">1.1.0</span></p>
+      <a class="modal-link" id="link-data-license" href="#">データライセンスを見る</a>
+      <a class="modal-link" id="link-privacy" href="#">プライバシーポリシー</a>
+      <a class="modal-link" id="link-support" href="#">サポート</a>
+      <button id="btn-privacy-options" class="modal-privacy-button hidden">プライバシー設定</button>
       <p class="modal-sub">このアプリにはGoogle AdMobによるバナー広告が表示されます。</p>
     </div>
-    <button id="btn-modal-close" class="secondary-button modal-close">閉じる</button>
+    <button id="btn-modal-close" class="secondary-button">閉じる</button>
   </div>
 </div>
 
-<!-- ========== 履歴全削除の確認ダイアログ ========== -->
-<div id="confirm-clear-history" class="confirm-overlay">
+<div id="confirm-clear-history" class="confirm-overlay" aria-hidden="true">
   <div class="confirm-box">
-    <p>履歴をすべて削除しますか？<br>この操作は取り消せません。</p>
+    <p>履歴をすべて削除しますか？<br><small>この操作は取り消せません。</small></p>
     <div class="confirm-actions">
-      <button id="btn-confirm-cancel" class="confirm-cancel">キャンセル</button>
-      <button id="btn-confirm-delete" class="confirm-delete">削除する</button>
+      <button id="btn-confirm-cancel" class="secondary-button">キャンセル</button>
+      <button id="btn-confirm-delete" class="delete-button">削除する</button>
     </div>
   </div>
 </div>
 
-<!-- file://でのPC確認用データ。Capacitor/HTTPではJSON取得を優先する。 -->
-<script src="data/name_data.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/generator.js"></script>
 <script src="js/ads.js"></script>
+<script src="js/share.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
+

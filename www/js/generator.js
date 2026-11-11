@@ -16,6 +16,9 @@
   };
 
   const RARITY_ORDER = ["common", "uncommon", "rare"];
+  const rarityCache = new WeakMap();
+  const conditionCache = new WeakMap();
+  const CHALLENGE_DISPLAY_CAP = 1_000_000_000_000;
 
   function weightedPick(weightMap) {
     const entries = Object.entries(weightMap);
@@ -33,12 +36,14 @@
   }
 
   function groupByRarity(list) {
+    if (rarityCache.has(list)) return rarityCache.get(list);
     const groups = { common: [], uncommon: [], rare: [] };
     for (const item of list) {
       if (groups[item.rarity]) {
         groups[item.rarity].push(item);
       }
     }
+    rarityCache.set(list, groups);
     return groups;
   }
 
@@ -68,11 +73,44 @@
    */
   function filterGivenNamesByCondition(givenNames, condition) {
     if (condition === "all") {
-      return givenNames.slice();
+      return givenNames;
     }
-    return givenNames.filter(
+    let cached = conditionCache.get(givenNames);
+    if (!cached) {
+      cached = {};
+      conditionCache.set(givenNames, cached);
+    }
+    if (cached[condition]) return cached[condition];
+    cached[condition] = givenNames.filter(
       (item) => Array.isArray(item.categories) && item.categories.includes(condition)
     );
+    return cached[condition];
+  }
+
+  function probabilityForWritten(list, written) {
+    const groups = groupByRarity(list);
+    const available = RARITY_ORDER.filter((tier) => groups[tier].length > 0);
+    const totalWeight = available.reduce((sum, tier) => sum + RARITY_WEIGHTS[tier], 0);
+    if (!totalWeight) return 0;
+    return available.reduce((probability, tier) => {
+      const matches = groups[tier].reduce(
+        (count, item) => count + (item.kanji === written ? 1 : 0),
+        0
+      );
+      if (!matches) return probability;
+      return probability
+        + (RARITY_WEIGHTS[tier] / totalWeight) * (matches / groups[tier].length);
+    }, 0);
+  }
+
+  function sampleFirstOccurrence(probability, randomValue) {
+    if (!(probability > 0 && probability <= 1)) return null;
+    const u = Math.min(Math.max(Number(randomValue), 0), 1 - Number.EPSILON);
+    const raw = Math.floor(Math.log1p(-u) / Math.log1p(-probability)) + 1;
+    if (!Number.isFinite(raw) || raw > CHALLENGE_DISPLAY_CAP) {
+      return { count: CHALLENGE_DISPLAY_CAP, capped: true };
+    }
+    return { count: Math.max(1, raw), capped: false };
   }
 
   function isSamePick(lastPick, surname, givenName) {
@@ -175,6 +213,44 @@
           givenName: picked.givenName.kanji,
           givenNameReading: picked.givenName.reading,
           createdAt: new Date().toISOString()
+        }
+      };
+    },
+
+    generateBatch(surnames, givenNames, condition, count) {
+      const results = [];
+      const seen = new Set();
+      let lastPick = null;
+      const maxAttempts = Math.max(100, count * 30);
+      for (let attempt = 0; attempt < maxAttempts && results.length < count; attempt++) {
+        const outcome = this.generate(surnames, givenNames, condition, lastPick);
+        if (outcome.error) return { error: outcome.error, results };
+        const entry = outcome.result;
+        const key = `${entry.surnameId}|${entry.givenNameId}`;
+        lastPick = { surnameId: entry.surnameId, givenNameId: entry.givenNameId };
+        if (seen.has(key)) continue;
+        seen.add(key);
+        results.push(entry);
+      }
+      return results.length === count
+        ? { results }
+        : { error: "INSUFFICIENT_UNIQUE_RESULTS", results };
+    },
+
+    challenge(surnames, givenNames, surnameWritten, givenWritten, randomValue = Math.random()) {
+      const surnameProbability = probabilityForWritten(surnames, surnameWritten);
+      const givenProbability = probabilityForWritten(givenNames, givenWritten);
+      if (!surnameProbability || !givenProbability) {
+        return { error: "NAME_NOT_FOUND" };
+      }
+      const combinedProbability = surnameProbability * givenProbability;
+      const sampled = sampleFirstOccurrence(combinedProbability, randomValue);
+      if (!sampled) return { error: "CALCULATION_FAILED" };
+      return {
+        result: {
+          count: sampled.count,
+          capped: sampled.capped,
+          probability: combinedProbability
         }
       };
     }

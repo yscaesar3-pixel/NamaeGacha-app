@@ -1,6 +1,6 @@
 {
   "name": "namaegacha",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "private": true,
   "description": "なまえガチャ - ランダム姓名メーカー（iPhone / Capacitor）",
   "scripts": {
@@ -8,14 +8,18 @@
     "validate-data:strict": "node tools/validate_name_data.js --strict-counts",
     "test:generator": "node tools/test_generator.js",
     "test:priority-surnames": "node tools/test_priority_surnames.js",
+    "test:v110": "node tools/test_v110.js",
     "cap:add-ios": "npx cap add ios --packagemanager SPM",
     "cap:sync": "npx cap sync ios",
     "cap:open": "npx cap open ios"
   },
   "dependencies": {
+    "@capacitor-community/admob": "^8.1.0",
+    "@capacitor/browser": "^8.0.5",
     "@capacitor/core": "^8.5.1",
+    "@capacitor/filesystem": "^8.1.5",
     "@capacitor/ios": "^8.5.1",
-    "@capacitor-community/admob": "^8.1.0"
+    "@capacitor/share": "^8.0.3"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.1"

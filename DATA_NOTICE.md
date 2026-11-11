@@ -1,5 +1,7 @@
 # 姓名データの出典と取扱い
 
+バージョン1.1.0では、姓20,000件・名20,000件の合計40,000件を収録しています。
+
 このアプリの `www/data/surnames.json` と `www/data/given_names.json` は、Electronic Dictionary
 Research and Development Group（EDRDG）の辞書データを加工して作成しています。
 

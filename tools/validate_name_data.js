@@ -7,7 +7,7 @@
  *
  * 使い方:
  *   node tools/validate_name_data.js
- *   node tools/validate_name_data.js --strict-counts   本番件数（姓10,000/名12,000）を必須にする
+ *   node tools/validate_name_data.js --strict-counts   本番件数（姓20,000/名20,000）を必須にする
  *
  * 終了コード: 問題があれば1、なければ0
  */
@@ -112,8 +112,8 @@ function validateSurnames(list) {
   });
 
   console.log(`[surnames] 件数: ${list.length}`, rarityCounts);
-  if (strictCounts && list.length !== 10000) {
-    errors.push(`[surnames] 本番件数（10,000件）と一致しません: ${list.length}件`);
+  if (strictCounts && list.length !== 20000) {
+    errors.push(`[surnames] 本番件数（20,000件）と一致しません: ${list.length}件`);
   }
 }
 
@@ -206,12 +206,12 @@ function validateGivenNames(list) {
   console.log("[given_names] カテゴリー×rarityの候補数:", categoryRarityCoverage);
 
   if (strictCounts) {
-    if (list.length !== 12000) {
-      errors.push(`[given_names] 本番件数（12,000件）と一致しません: ${list.length}件`);
+    if (list.length !== 20000) {
+      errors.push(`[given_names] 本番件数（20,000件）と一致しません: ${list.length}件`);
     }
-    if (primaryCounts.male !== 5000) errors.push(`[given_names] primaryCategory=maleが5,000件ではありません: ${primaryCounts.male}`);
-    if (primaryCounts.female !== 5000) errors.push(`[given_names] primaryCategory=femaleが5,000件ではありません: ${primaryCounts.female}`);
-    if (primaryCounts.unspecified !== 2000) errors.push(`[given_names] primaryCategory=unspecifiedが2,000件ではありません: ${primaryCounts.unspecified}`);
+    if (primaryCounts.male !== 8000) errors.push(`[given_names] primaryCategory=maleが8,000件ではありません: ${primaryCounts.male}`);
+    if (primaryCounts.female !== 8000) errors.push(`[given_names] primaryCategory=femaleが8,000件ではありません: ${primaryCounts.female}`);
+    if (primaryCounts.unspecified !== 4000) errors.push(`[given_names] primaryCategory=unspecifiedが4,000件ではありません: ${primaryCounts.unspecified}`);
     const neutralCount = categoryRarityCoverage.neutral.common
       + categoryRarityCoverage.neutral.uncommon
       + categoryRarityCoverage.neutral.rare;

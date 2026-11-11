@@ -1,0 +1,50 @@
+なまえガチャ 1.1.0 差分ファイル
+基準ZIP: NamaeGacha.zip
+基準ZIP SHA-256: c80316b581d5ff7d89525134417f9ad2441e9d211d70d5f3de6d57ea9df2872c
+作成日: 2026-11-11
+
+変更・追加: 37ファイル
+[変更] DATA_NOTICE.md
+[変更] README.md
+[追加] RELEASE_NOTES_v1.1.0.md
+[変更] codemagic.yaml
+[変更] docs/privacy.html
+[変更] docs/support.html
+[変更] ios/App/App.xcodeproj/project.pbxproj
+[変更] ios/App/App/capacitor.config.json
+[変更] ios/App/App/public/css/app.css
+[変更] ios/App/App/public/data/data_sources.json
+[変更] ios/App/App/public/data/given_names.json
+[追加] ios/App/App/public/data/manifest.json
+[変更] ios/App/App/public/data/name_data.js
+[変更] ios/App/App/public/data/surnames.json
+[変更] ios/App/App/public/index.html
+[変更] ios/App/App/public/js/ads.js
+[変更] ios/App/App/public/js/app.js
+[変更] ios/App/App/public/js/generator.js
+[追加] ios/App/App/public/js/share.js
+[変更] ios/App/App/public/js/storage.js
+[変更] ios/App/CapApp-SPM/Package.swift
+[変更] package-lock.json
+[変更] package.json
+[変更] tools/build_name_data.py
+[追加] tools/test_v110.js
+[変更] tools/validate_name_data.js
+[変更] www/css/app.css
+[変更] www/data/data_sources.json
+[変更] www/data/given_names.json
+[追加] www/data/manifest.json
+[変更] www/data/name_data.js
+[変更] www/data/surnames.json
+[変更] www/index.html
+[変更] www/js/app.js
+[変更] www/js/generator.js
+[追加] www/js/share.js
+[変更] www/js/storage.js
+
+削除: 0ファイル
+
+注意:
+- 差分ZIPは上記の基準ZIP専用です。
+- Codemagicへ使用する場合は完成版ZIPを推奨します。
+- node_modulesは同梱していません。npm installを実行してください。

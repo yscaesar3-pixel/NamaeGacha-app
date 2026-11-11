@@ -12,8 +12,8 @@ import unicodedata
 from collections import Counter, defaultdict
 from pathlib import Path
 
-SURNAME_COUNT = 10_000
-PRIMARY_COUNTS = {"male": 5_000, "female": 5_000, "unspecified": 2_000}
+SURNAME_COUNT = 20_000
+PRIMARY_COUNTS = {"male": 8_000, "female": 8_000, "unspecified": 4_000}
 RARITY_SPLIT = (0.20, 0.30)  # common 20%, uncommon 30%, rare 50%
 
 # Conservative, spelling-specific neutral set. A reading alone is insufficient:
@@ -310,7 +310,9 @@ def load_surname_frequency(path: Path | None) -> list[str]:
 
 
 def build_surnames(
-    candidates: dict[tuple[str, str], set[str]], frequency_order: list[str]
+    candidates: dict[tuple[str, str], set[str]],
+    frequency_order: list[str],
+    base_records: list[dict] | None = None,
 ) -> list[dict]:
     frequencies = char_frequencies(candidates)
     overall = ranked(candidates, frequencies, "surname")
@@ -320,6 +322,14 @@ def build_surnames(
 
     chosen = []
     chosen_set = set()
+
+    # Keep every previously released spelling-reading pair first. This makes a
+    # data expansion additive and prevents established names from disappearing.
+    for record in base_records or []:
+        key = (record.get("kanji", ""), record.get("reading", ""))
+        if key in candidates and key not in chosen_set:
+            chosen.append(key)
+            chosen_set.add(key)
 
     # Population-ranked spellings come first. When JMnedict also marks a reading
     # as a place name, it is a substantially stronger representative-reading
@@ -364,21 +374,35 @@ def build_surnames(
     return records
 
 
-def build_given_names(candidates: dict[tuple[str, str], set[str]]) -> list[dict]:
+def build_given_names(
+    candidates: dict[tuple[str, str], set[str]],
+    base_records: list[dict] | None = None,
+) -> list[dict]:
     frequencies = char_frequencies(candidates)
     selected: dict[tuple[str, str], str] = {}
+
+    # Preserve all released records and their primary classification. New
+    # records only fill the enlarged per-category targets.
+    for record in base_records or []:
+        key = (record.get("kanji", ""), record.get("reading", ""))
+        primary = record.get("primaryCategory")
+        if key in candidates and primary in PRIMARY_COUNTS:
+            selected[key] = primary
 
     for primary in ("male", "female"):
         ordered = prefer_curated_neutral(
             ranked((key for key in candidates if primary in candidates[key]), frequencies, "given")
         )
+        needed = PRIMARY_COUNTS[primary] - sum(
+            value == primary for value in selected.values()
+        )
         chosen = take_with_reading_cap(
             ordered,
             lambda key, category=primary: category in candidates[key],
-            PRIMARY_COUNTS[primary],
+            needed,
             selected,
             8,
-        )
+        ) if needed else []
         selected.update({key: primary for key in chosen})
 
     # Reserve spelling-specific neutral candidates in the unspecified bucket.
@@ -392,14 +416,16 @@ def build_given_names(candidates: dict[tuple[str, str], set[str]]) -> list[dict]
     reserved_neutral = [key for key in unspecified_pool if key in NEUTRAL_PAIRS]
     for key in reserved_neutral:
         selected[key] = "unspecified"
-    unspecified_needed = PRIMARY_COUNTS["unspecified"] - len(reserved_neutral)
+    unspecified_needed = PRIMARY_COUNTS["unspecified"] - sum(
+        value == "unspecified" for value in selected.values()
+    )
     extra_unspecified = take_with_reading_cap(
         unspecified_pool,
         lambda key: True,
         unspecified_needed,
         selected,
         8,
-    )
+    ) if unspecified_needed else []
     selected.update({key: "unspecified" for key in extra_unspecified})
 
     by_primary: dict[str, list[tuple[str, str]]] = defaultdict(list)
@@ -435,7 +461,7 @@ def build_given_names(candidates: dict[tuple[str, str], set[str]]) -> list[dict]
                 }
             )
 
-    if len(records) != 12_000:
+    if len(records) != 20_000:
         raise RuntimeError(f"Wrong given-name count: {len(records)}")
     return records
 
@@ -469,12 +495,24 @@ def main() -> None:
         type=Path,
         help="CSV with columns sei,rank,number; rows ordered by population rank",
     )
+    parser.add_argument(
+        "--base-surnames",
+        type=Path,
+        help="Previously released surnames JSON to preserve during expansion",
+    )
+    parser.add_argument(
+        "--base-given-names",
+        type=Path,
+        help="Previously released given names JSON to preserve during expansion",
+    )
     args = parser.parse_args()
 
     surnames_raw, given_raw, metadata = load_candidates(args.source, args.kanjidic)
     surname_frequency = load_surname_frequency(args.surname_frequency)
-    surnames = build_surnames(surnames_raw, surname_frequency)
-    given_names = build_given_names(given_raw)
+    base_surnames = json.loads(args.base_surnames.read_text(encoding="utf-8")) if args.base_surnames else []
+    base_given_names = json.loads(args.base_given_names.read_text(encoding="utf-8")) if args.base_given_names else []
+    surnames = build_surnames(surnames_raw, surname_frequency, base_surnames)
+    given_names = build_given_names(given_raw, base_given_names)
     args.output.mkdir(parents=True, exist_ok=True)
     write_json(args.output / "surnames.json", surnames)
     write_json(args.output / "given_names.json", given_names)
@@ -482,7 +520,7 @@ def main() -> None:
     write_json(
         args.output / "data_sources.json",
         {
-            "generatedAt": "2026-09-05",
+            "generatedAt": "2026-11-11",
             "sources": [
                 {
                     "name": "JMnedict via jmdict-simplified",
@@ -513,7 +551,7 @@ def main() -> None:
                 "upstream": "https://shizuoka.repo.nii.ac.jp/records/10691",
                 "fileSha256": "77fa934ad952437fd0caa0da91eb64476d8bb0c5a31161571ad159f060f8d237",
                 "usage": "surname spelling selection order only; source CSV is not bundled",
-            }] if args.surname_frequency else []),
+            }] if (args.surname_frequency or args.base_surnames) else []),
             "selection": {
                 "surnameCount": len(surnames),
                 "givenNameCount": len(given_names),
@@ -528,6 +566,15 @@ def main() -> None:
                     "Records use basic CJK ideographs plus the iteration mark 々; readings are hiragana-only.",
                 ],
             },
+        },
+    )
+    write_json(
+        args.output / "manifest.json",
+        {
+            "dataVersion": "1.1.0",
+            "updatedAt": "2026-11-11",
+            "surnameCount": len(surnames),
+            "givenNameCount": len(given_names),
         },
     )
     print(json.dumps({
