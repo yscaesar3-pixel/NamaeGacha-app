@@ -94,10 +94,10 @@
     drawBrand(ctx, "今回のガチャ結果");
     roundRect(ctx, 110, 220, 980, 760, 40, COLORS.card, COLORS.line);
     centerText(ctx, "今回の名前", 322, 30, COLORS.vermilion, 700);
-    const name = `${entry.surname} ${entry.givenName}`;
+    const name = NamaeGachaEnglish.name(entry);
     const nameSize = fitText(ctx, name, 840, 104, 54, 800);
     centerText(ctx, name, 545, nameSize, COLORS.ink, 800);
-    const reading = `${entry.surnameReading}　${entry.givenNameReading}`;
+    const reading = NamaeGachaEnglish.reading(entry);
     const readingSize = fitText(ctx, reading, 800, 38, 24, 500);
     centerText(ctx, reading, 660, readingSize, COLORS.sub, 500);
     roundRect(ctx, 330, 770, 540, 92, 46, COLORS.goldBg);
@@ -126,13 +126,13 @@
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
       ctx.fillText(String(index + 1).padStart(2, "0"), x + 24, y + 38);
-      const name = `${entry.surname} ${entry.givenName}`;
+      const name = NamaeGachaEnglish.name(entry);
       const nameSize = fitText(ctx, name, cardWidth - 110, 38, 23, 800);
       ctx.font = font(nameSize, 800);
       ctx.fillStyle = COLORS.ink;
       ctx.textAlign = "center";
       ctx.fillText(name, x + cardWidth / 2 + 18, y + 62);
-      const reading = `${entry.surnameReading} ${entry.givenNameReading}`;
+      const reading = NamaeGachaEnglish.reading(entry);
       const readingSize = fitText(ctx, reading, cardWidth - 48, 22, 16, 500);
       ctx.font = font(readingSize, 500);
       ctx.fillStyle = COLORS.sub;
@@ -251,7 +251,7 @@
     async single(entry, appStoreUrl) {
       return shareCanvas(drawSingle(entry), {
         title: "なまえガチャ",
-        text: `なまえガチャで「${entry.surname} ${entry.givenName}」が出ました！\n#なまえガチャ${appStoreUrl ? `\n${appStoreUrl}` : ""}`
+        text: `なまえガチャで「${NamaeGachaEnglish.name(entry)}」が出ました！\n#なまえガチャ${appStoreUrl ? `\n${appStoreUrl}` : ""}`
       });
     },
     async ten(entries, appStoreUrl) {

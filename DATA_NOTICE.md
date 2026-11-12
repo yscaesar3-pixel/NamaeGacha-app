@@ -1,5 +1,12 @@
 # 姓名データの出典と取扱い
 
+## 英語名モード（1.2.0）
+
+- 姓：U.S. Census Bureau の [Frequently Occurring Surnames from the 2010 Census](https://www.census.gov/topics/population/genealogy/data/2010_surnames.html)。英字のみの姓から順位上位10,000件を採用し、表示用に大文字小文字を整えました。
+- 名：U.S. Social Security Administration の [Popular Baby Names: National Data](https://www.ssa.gov/oact/babynames/limits.html)。2000〜2025年の件数を集計し、男女それぞれの上位5,000件を確保したうえで、合計件数順で10,000種類まで補いました。
+- 中性的：米国の元データで男女それぞれ25件以上、かつ少ない側が全体の20%以上の名をアプリ内で分類しています。個人の性別を示すものではありません。
+- 原資料の件数や人口属性は同梱せず、選定した表記とアプリ内分類のみを収録しています。米国のデータを使っているため、英語圏全体の分布を示すものではありません。
+
 バージョン1.1.0では、姓20,000件・名20,000件の合計40,000件を収録しています。
 
 このアプリの `www/data/surnames.json` と `www/data/given_names.json` は、Electronic Dictionary

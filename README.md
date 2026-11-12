@@ -1,4 +1,10 @@
-# なまえガチャ 1.1.0
+# なまえガチャ 1.2.0
+
+1.2.0で英語名モードを追加しました。初期表示は日本名で、英語名データは
+切り替え時に初めて読み込みます。英語名もアプリに同梱されるため、端末では
+オフラインで生成できます。「自分の名前は何回目？」と追加リクエストは日本名専用です。
+PCブラウザで英語名を試す場合は、下記のローカルサーバー手順を使用してください。
+英語名の出典と選定方法は `DATA_NOTICE.md` を参照してください。
 
 iPhone専用のランダム姓名メーカーです。HTML/CSS/JavaScriptとCapacitorで構成し、
 WindowsからCodemagicを使用してApp Store向けにビルドします。
@@ -129,7 +135,7 @@ npx cap sync ios
 
 ## Codemagic
 
-`codemagic.yaml`の`APP_VERSION`は`1.1.0`です。
+`codemagic.yaml`の`APP_VERSION`は`1.2.0`です。
 ビルド番号はCodemagicの`PROJECT_BUILD_NUMBER`を使用します。
 
 `ADMOB_USE_PRODUCTION: "true"`の場合、ビルド時に`ads.js`を本番広告モードへ切り替えます。

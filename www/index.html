@@ -19,6 +19,10 @@
     </header>
     <main class="screen-scroll home-scroll">
       <section class="hero-card">
+        <div id="language-segment" class="segmented-control language-segment" role="group" aria-label="名前の言語">
+          <button class="segment-item selected" data-language="ja" aria-pressed="true">日本名</button>
+          <button class="segment-item" data-language="en" aria-pressed="false">英語名</button>
+        </div>
         <p class="section-kicker">生成条件</p>
         <div id="condition-segment" class="segmented-control" role="tablist" aria-label="生成条件">
           <button class="segment-item" data-condition="all">すべて</button>
@@ -202,8 +206,9 @@
     <h2 class="modal-title">なまえガチャについて</h2>
     <div class="modal-body">
       <p>実際に使われている姓と名をランダムに組み合わせます。表示された組み合わせが、実在する人物を示すものではありません。</p>
-      <p class="modal-sub">収録データ：姓20,000件・名20,000件</p>
-      <p class="modal-sub">アプリバージョン：<span id="info-version">1.1.0</span></p>
+      <p class="modal-sub">日本名：姓20,000件・名20,000件<br>英語名：姓10,000件・名10,000件（米国データ）</p>
+      <p class="modal-sub">英語名の出典：米国国勢調査局（2010年の姓）・米国社会保障局（2000〜2025年の名）</p>
+      <p class="modal-sub">アプリバージョン：<span id="info-version">1.2.0</span></p>
       <a class="modal-link" id="link-data-license" href="#">データライセンスを見る</a>
       <a class="modal-link" id="link-privacy" href="#">プライバシーポリシー</a>
       <a class="modal-link" id="link-support" href="#">サポート</a>
@@ -227,6 +232,7 @@
 <script src="js/storage.js"></script>
 <script src="js/generator.js"></script>
 <script src="js/ads.js"></script>
+<script src="js/english-names.js"></script>
 <script src="js/share.js"></script>
 <script src="js/app.js"></script>
 </body>

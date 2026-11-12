@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "1.1.0";
+  const APP_VERSION = "1.2.0";
   const PRIVACY_POLICY_URL = "https://yscaesar3-pixel.github.io/NamaeGacha-app/privacy.html";
   const SUPPORT_URL = "https://yscaesar3-pixel.github.io/NamaeGacha-app/support.html";
   const DATA_LICENSE_URL = "https://www.edrdg.org/edrdg/licence.html";
@@ -27,6 +27,12 @@
     surnameSet: new Set(),
     givenSet: new Set(),
     dataLoaded: false,
+    japaneseLoading: false,
+    japaneseFailed: false,
+    language: "ja",
+    english: null,
+    englishLoading: false,
+    englishFailed: false,
     condition: "all",
     lastPick: null,
     currentResult: null,
@@ -51,6 +57,7 @@
       list: $("screen-list")
     },
     conditionSegment: $("condition-segment"),
+    languageSegment: $("language-segment"),
     btnGenerate: $("btn-generate"),
     btnGenerateTen: $("btn-generate-ten"),
     btnOpenChallenge: $("btn-open-challenge"),
@@ -181,11 +188,10 @@
   }
 
   async function loadNameData() {
-    el.homeLoading.classList.remove("hidden");
-    el.btnReload.classList.add("hidden");
-    setMessage(el.homeError, "");
-    el.btnGenerate.disabled = true;
-    el.btnGenerateTen.disabled = true;
+    if (state.japaneseLoading) return;
+    state.japaneseLoading = true;
+    state.japaneseFailed = false;
+    refreshLanguage();
     try {
       let surnames;
       let givenNames;
@@ -209,17 +215,63 @@
       state.givenNames = givenNames;
       buildSearchIndex();
       state.dataLoaded = true;
-      el.homeLoading.classList.add("hidden");
-      el.btnGenerate.disabled = false;
-      el.btnGenerateTen.disabled = false;
+
     } catch (error) {
       console.warn("[app] name data load failed", error);
       state.dataLoaded = false;
-      el.homeLoading.classList.add("hidden");
-      el.btnReload.classList.remove("hidden");
-      setMessage(el.homeError, "名前データを読み込めませんでした。アプリを再起動するか、再読み込みしてください。");
+      state.japaneseFailed = true;
+    } finally {
+      state.japaneseLoading = false;
+      refreshLanguage();
     }
   }
+
+  function activeData() {
+    return state.language === "en" ? state.english : (state.dataLoaded ? state : null);
+  }
+
+  function refreshLanguage() {
+    const english = state.language === "en";
+    const loading = english ? state.englishLoading : state.japaneseLoading;
+    const failed = english ? state.englishFailed : state.japaneseFailed;
+    for (const button of el.languageSegment.querySelectorAll("button")) {
+      const selected = button.dataset.language === state.language;
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    }
+    el.btnOpenChallenge.classList.toggle("hidden", english);
+    el.homeLoading.textContent = english ? "英語名を読み込み中です…" : "名前データを読み込み中です…";
+    el.homeLoading.classList.toggle("hidden", !loading);
+    el.btnReload.classList.toggle("hidden", !failed);
+    el.btnGenerate.disabled = el.btnGenerateTen.disabled = !activeData();
+    setMessage(el.homeError, failed ? (english && location.protocol === "file:"
+      ? "英語名を試す場合は、READMEの手順でローカルサーバーから開いてください。"
+      : "名前データを読み込めませんでした。再読み込みしてください。") : "");
+  }
+
+  async function loadEnglishNames() {
+    if (state.english || state.englishLoading) return;
+    state.englishLoading = true;
+    state.englishFailed = false;
+    refreshLanguage();
+    try {
+      state.english = await NamaeGachaEnglish.load();
+    } catch (error) {
+      state.englishFailed = true;
+      console.warn("[app] English name data load failed", error);
+    } finally {
+      state.englishLoading = false;
+      refreshLanguage();
+    }
+  }
+
+  el.languageSegment.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-language]");
+    if (!button) return;
+    state.language = button.dataset.language;
+    refreshLanguage();
+    if (state.language === "en") loadEnglishNames();
+  });
 
   function setCondition(condition, persist) {
     state.condition = condition;
@@ -247,15 +299,17 @@
   }
 
   function generateSingle(saveHistory = true) {
-    if (!state.dataLoaded) return { error: "DATA_NOT_LOADED" };
+    const data = activeData();
+    if (!data) return { error: "DATA_NOT_LOADED" };
     const outcome = NameGenerator.generate(
-      state.surnames,
-      state.givenNames,
+      data.surnames,
+      data.givenNames,
       state.condition,
       state.lastPick
     );
     if (outcome.error) return outcome;
     const entry = outcome.result;
+    if (state.language === "en") entry.language = "en";
     state.lastPick = { surnameId: entry.surnameId, givenNameId: entry.givenNameId };
     if (saveHistory && !NamaeGachaStorage.addHistory(entry)) {
       showToast("結果を履歴に保存できませんでした");
@@ -266,8 +320,10 @@
   function renderResult(entry, source) {
     state.currentResult = entry;
     state.currentResultSource = source;
-    el.resultName.textContent = `${entry.surname}　${entry.givenName}`;
-    el.resultReading.textContent = `${entry.surnameReading}　${entry.givenNameReading}`;
+    el.resultName.textContent = NamaeGachaEnglish.name(entry, "　");
+    el.resultName.classList.toggle("english-result", NamaeGachaEnglish.isEnglish(entry));
+    el.resultReading.textContent = NamaeGachaEnglish.reading(entry);
+    el.resultReading.classList.toggle("hidden", NamaeGachaEnglish.isEnglish(entry));
     updateStarButton(el.btnResultStar, entry);
     setMessage(el.resultError, "");
     const generated = source === "generated";
@@ -304,7 +360,7 @@
 
   async function copyEntry(entry) {
     try {
-      await navigator.clipboard.writeText(`${entry.surname} ${entry.givenName}`);
+      await navigator.clipboard.writeText(NamaeGachaEnglish.name(entry));
       showToast("姓名をコピーしました");
     } catch (error) {
       console.warn("[app] copy failed", error);
@@ -352,15 +408,17 @@
   el.btnResultList.addEventListener("click", () => openList("history"));
 
   function generateTen() {
-    if (!state.dataLoaded) return { error: "DATA_NOT_LOADED" };
+    const data = activeData();
+    if (!data) return { error: "DATA_NOT_LOADED" };
     const outcome = NameGenerator.generateBatch(
-      state.surnames,
-      state.givenNames,
+      data.surnames,
+      data.givenNames,
       state.condition,
       10
     );
     if (!outcome.results || !outcome.results.length) return outcome;
     state.currentBatch = outcome.results;
+    if (state.language === "en") state.currentBatch.forEach((entry) => { entry.language = "en"; });
     const last = state.currentBatch[state.currentBatch.length - 1];
     state.lastPick = { surnameId: last.surnameId, givenNameId: last.givenNameId };
     if (!NamaeGachaStorage.addHistoryBatch(state.currentBatch)) {
@@ -383,8 +441,8 @@
       const main = document.createElement("button");
       main.className = "ten-main";
       main.innerHTML = `<div class="ten-name"></div><div class="ten-reading"></div>`;
-      main.querySelector(".ten-name").textContent = `${entry.surname}　${entry.givenName}`;
-      main.querySelector(".ten-reading").textContent = `${entry.surnameReading}　${entry.givenNameReading}`;
+      main.querySelector(".ten-name").textContent = NamaeGachaEnglish.name(entry, "　");
+      main.querySelector(".ten-reading").textContent = NamaeGachaEnglish.reading(entry);
       main.addEventListener("click", () => renderResult(entry, "ten"));
 
       const star = document.createElement("button");
@@ -658,8 +716,8 @@
     const main = document.createElement("button");
     main.className = "saved-name-main";
     main.innerHTML = `<div class="favorite-name"></div><div class="favorite-reading"></div>`;
-    main.querySelector(".favorite-name").textContent = `${entry.surname}　${entry.givenName}`;
-    main.querySelector(".favorite-reading").textContent = `${entry.surnameReading}　${entry.givenNameReading}`;
+    main.querySelector(".favorite-name").textContent = NamaeGachaEnglish.name(entry, "　");
+    main.querySelector(".favorite-reading").textContent = NamaeGachaEnglish.reading(entry);
     main.addEventListener("click", () => renderResult(entry, source));
 
     const star = document.createElement("button");
@@ -761,7 +819,7 @@
   });
 
   el.btnOpenChallenge.addEventListener("click", openChallenge);
-  el.btnReload.addEventListener("click", loadNameData);
+  el.btnReload.addEventListener("click", () => state.language === "en" ? loadEnglishNames() : loadNameData());
 
   function openInfo() {
     el.modalInfo.classList.add("visible");

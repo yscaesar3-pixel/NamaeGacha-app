@@ -11,7 +11,7 @@ workflows:
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
-        APP_VERSION: "1.1.0"
+        APP_VERSION: "1.2.0"
         # リリース用設定。本番広告IDを使用する。
         ADMOB_USE_PRODUCTION: "true"
       node: latest
