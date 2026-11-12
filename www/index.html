@@ -117,7 +117,7 @@
       <div class="search-field-wrap">
         <label for="challenge-surname">姓</label>
         <div class="search-input-row">
-          <input id="challenge-surname" type="text" inputmode="text" autocomplete="off" placeholder="例：関" maxlength="12">
+          <input id="challenge-surname" type="text" inputmode="text" autocomplete="off" placeholder="例：佐藤" maxlength="12">
           <button class="input-clear" data-target="challenge-surname" aria-label="姓を消去">×</button>
         </div>
         <div id="surname-suggestions" class="suggestions"></div>
@@ -128,7 +128,7 @@
       <div class="search-field-wrap">
         <label for="challenge-given">名</label>
         <div class="search-input-row">
-          <input id="challenge-given" type="text" inputmode="text" autocomplete="off" placeholder="例：勇太" maxlength="12">
+          <input id="challenge-given" type="text" inputmode="text" autocomplete="off" placeholder="例：太郎" maxlength="12">
           <button class="input-clear" data-target="challenge-given" aria-label="名を消去">×</button>
         </div>
         <div id="given-suggestions" class="suggestions"></div>
@@ -157,7 +157,11 @@
           <span>ベスト記録</span>
           <strong id="challenge-best-count">－回目</strong>
         </div>
-        <p class="challenge-disclaimer">結果はチャレンジするたびに変わります</p>
+        <details class="challenge-disclaimer">
+          <summary>回数の決まり方</summary>
+          <p id="challenge-odds"></p>
+          <p>ガチャ1回分の出現確率を使い、独立に引き続けた場合に初めて出る回数を、連続で引く代わりに一度の計算で抽選しています。</p>
+        </details>
       </article>
       <div id="challenge-result-error" class="inline-message error-message" role="alert"></div>
       <div class="action-stack">

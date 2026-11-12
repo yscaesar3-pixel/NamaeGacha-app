@@ -752,10 +752,21 @@ a:focus-visible {
 .challenge-count {
   margin: 0;
   color: var(--vermilion);
-  font-size: clamp(48px, 14vw, 68px);
+  font-size: clamp(24px, 9vw, 68px);
   line-height: 1.2;
   font-weight: 900;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.challenge-count.long-count {
+  font-size: min(5vw, 42px);
+}
+
+@supports (font-size: 1cqi) {
+  .challenge-result-card { container-type: inline-size; }
+  .challenge-count { font-size: min(11cqi, 68px); }
+  .challenge-count.long-count { font-size: min(7.5cqi, 42px); }
 }
 
 .best-box {
@@ -784,6 +795,17 @@ a:focus-visible {
   margin: 20px 0 0;
   color: var(--sub);
   font-size: 12px;
+}
+
+.challenge-disclaimer summary {
+  min-height: 44px;
+  padding: 12px 0;
+  cursor: pointer;
+}
+
+.challenge-disclaimer p {
+  margin: 4px 0 8px;
+  line-height: 1.6;
 }
 
 /* History / favorites */

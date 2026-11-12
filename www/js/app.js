@@ -93,6 +93,7 @@
 
     challengeResultName: $("challenge-result-name"),
     challengeResultCount: $("challenge-result-count"),
+    challengeOdds: $("challenge-odds"),
     challengeBestCount: $("challenge-best-count"),
     challengeResultError: $("challenge-result-error"),
     btnChallengeAgain: $("btn-challenge-again"),
@@ -609,6 +610,7 @@
       givenName: given.value,
       count: result.count,
       capped: result.capped,
+      probability: result.probability,
       bestCount: bestUpdate.record.count,
       bestCapped: bestUpdate.record.capped
     };
@@ -621,6 +623,9 @@
     if (!result) return;
     el.challengeResultName.textContent = `${result.surname} ${result.givenName}さんは`;
     el.challengeResultCount.textContent = formatCount(result.count, result.capped);
+    el.challengeResultCount.classList.toggle("long-count", el.challengeResultCount.textContent.length > 7);
+    const odds = (1 / result.probability).toLocaleString("ja-JP", { maximumSignificantDigits: 3 });
+    el.challengeOdds.textContent = `この姓名が1回で出る確率：約${odds}分の1`;
     el.challengeBestCount.textContent = formatCount(result.bestCount, result.bestCapped);
     setMessage(el.challengeResultError, "");
   }
